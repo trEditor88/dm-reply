@@ -82,6 +82,18 @@ th{color:var(--muted);font-weight:600}
 .empty{color:var(--muted);text-align:center;padding:24px 0}
 .auth{max-width:400px;margin:24px auto 0}
 footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48px}
+/* 원격 로그인: PC 크롬 창 화면을 보며 클릭·입력 */
+.remote{position:fixed;inset:0;z-index:20;background:var(--canvas);display:flex;flex-direction:column;overflow:auto}
+.remote .bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--hairline);position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.remote .bar .title{font-size:16px;flex:1}
+.screen{position:relative;margin:12px auto 0;width:min(100% - 32px,900px);aspect-ratio:1000/760;background:var(--parchment);border-radius:var(--r-md);overflow:hidden;cursor:crosshair;touch-action:manipulation}
+.screen img{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
+.screen .wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px;text-align:center;padding:20px}
+.rc{width:min(100% - 32px,900px);margin:12px auto 0;padding-bottom:40px}
+.rc .row{margin-bottom:10px}
+.rc input[type=text],.rc input[type=password]{flex:1;min-width:160px}
+.rc .keys button{background:var(--parchment);color:var(--ink);padding:8px 14px;min-height:40px;font-size:14px}
+.rc .sub{margin-top:4px}
 @media (max-width:480px){ .grid2{grid-template-columns:1fr} header h1{font-size:16px} .card{padding:16px} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -155,6 +167,40 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
 </main>
 <footer>개인용 도구 · 받은 메시지 내용은 서버에 저장하지 않아요</footer>
 
+<!-- 원격 로그인(관리자 본인 계정): PC 의 크롬 창 화면을 보면서 클릭·입력 -->
+<div id="remoteView" class="remote hidden" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+  <div class="bar">
+    <div class="title" id="rTitle">원격 로그인</div>
+    <span class="badge" id="rState">PC 연결 중</span>
+    <button class="plain small" id="rClose">끝내기</button>
+  </div>
+  <div class="screen" id="rScreen">
+    <img id="rImg" alt="PC 크롬 창 화면" draggable="false">
+    <div class="wait" id="rWait">PC 가 창을 여는 중이에요… 보통 20초쯤 걸려요.</div>
+  </div>
+  <div class="rc">
+    <div class="sub" id="rUrl"></div>
+    <div class="row" style="margin-top:10px">
+      <input id="rText" type="text" maxlength="100" placeholder="화면의 입력칸을 먼저 클릭한 뒤 여기에 적고 보내기" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="PC 에 입력할 글자">
+      <button id="rSend" class="small">보내기</button>
+      <button id="rEnter" class="ghost small">Enter</button>
+    </div>
+    <div class="row keys">
+      <label class="sub" style="display:flex;align-items:center;gap:6px;margin:0;font-weight:400"><input type="checkbox" id="rMask" style="width:18px;height:18px;min-height:0;padding:0;margin:0"> 입력 가리기(비밀번호)</label>
+      <button data-key="Backspace">⌫ 지우기</button>
+      <button data-key="Control+a">전체 선택</button>
+      <button data-key="Tab">Tab</button>
+      <button data-key="Escape">Esc</button>
+      <button data-scroll="-400">▲ 위로</button>
+      <button data-scroll="400">▼ 아래로</button>
+      <button data-goto="login">로그인 페이지로</button>
+      <button data-goto="inbox">받은 메시지로</button>
+    </div>
+    <div class="sub">화면을 누르면 PC 에서 그 자리를 클릭해요. 2초쯤 뒤에 화면이 바뀌어요. 로그인이 끝나면 "끝내기"를 누르세요. 새 창이 뜨는 "Facebook 으로 로그인"은 여기서 쓸 수 없어요(인스타 아이디·비밀번호로 로그인).</div>
+    <div class="msg" id="rMsg" role="status"></div>
+  </div>
+</div>
+
 <script>
 const API = (() => { try { return localStorage.getItem('dm-reply:api') || ''; } catch (e) { return ''; } })() || 'https://dm-api.dawn-sea-4052.workers.dev';
 const TK = 'dm-reply:token';
@@ -172,6 +218,7 @@ const ERR = {
   bad_label: '이름표를 적어 주세요.', acc_limit: '계정은 한 사람당 2개까지예요.', acc_total: 'PC 가 감당할 수 있는 계정 수가 다 찼어요.',
   need_cfg: '켜려면 대상과 답장 문구를 하나 이상 넣고 저장해 주세요.', not_found: '계정을 찾을 수 없어요.',
   forbidden: '권한이 없어요.', self: '자기 자신은 바꿀 수 없어요.', bad_status: '잘못된 상태 값이에요.',
+  remote_off: '원격 로그인이 끝났어요. 다시 열어 주세요.', bad_event: '보낼 수 없는 입력이에요.', remote_busy: 'PC 가 아직 앞의 입력을 처리 중이에요. 잠시 뒤 다시 해 주세요.',
 };
 const errText = (e) => ERR[e] || ('오류: ' + e);
 
@@ -285,7 +332,9 @@ function stateLine(a, pcOn) {
   const needLogin = pcOn && (a.state === 'login' || a.state === 'new' && a.loginReq);
   return `${stateBadge(a, pcOn)} <span class="sub">오늘 답장 ${Number(a.sent) || 0}/${Number(a.cfg.cap) || 0}</span>` +
     (a.info && pcOn ? `<div class="sub" style="margin-top:6px">${esc(a.info)}</div>` : '') +
-    (needLogin ? `<div class="note warn">관리자 PC 에 이 계정의 크롬 창이 떠 있어요. <b>그 PC 앞에서</b> 인스타그램에 로그인해야 시작돼요. (비밀번호는 이 사이트에 적지 마세요)</div>` : '');
+    (needLogin ? (me && me.role === 'admin'
+      ? `<div class="note warn">이 계정은 인스타그램 로그인이 필요해요. 아래 <b>원격 로그인</b>으로 여기서 PC 창을 보며 로그인하거나, 그 PC 앞에서 직접 로그인하세요.</div>`
+      : `<div class="note warn">관리자 PC 에 이 계정의 크롬 창이 떠 있어요. <b>그 PC 앞에서</b> 인스타그램에 로그인해야 시작돼요. (비밀번호는 이 사이트에 적지 마세요)</div>`) : '');
 }
 
 function updateCard(a, el, pcOn) {
@@ -332,6 +381,7 @@ function accCard(a) {
     </details>
     <details class="lg"><summary>기록</summary><ul class="logs"><li class="empty">불러오는 중…</li></ul></details>
     <div class="actions">
+      ${me && me.role === 'admin' ? '<button class="small rmt">원격 로그인</button>' : ''}
       <button class="ghost small lgn">PC 에 로그인 창 띄우기</button>
       <button class="danger small del">계정 삭제</button>
     </div>
@@ -368,6 +418,7 @@ function bindCard(aid, el) {
     setMsg(msg, r.ok ? (cancel ? 'PC 의 로그인 창을 닫으라고 보냈어요.' : 'PC 에 로그인 창을 띄우라고 보냈어요. 그 PC 앞에서 로그인하세요.') : errText(r.error), r.ok ? 'ok' : 'err');
     if (r.ok) refresh();
   };
+  if (q('.rmt')) q('.rmt').onclick = () => openRemote(aid, q('.title').textContent);
   q('.del').onclick = async () => {
     const label = q('.title').textContent;
     if (!confirm(`"${label}" 계정을 삭제할까요?\nPC 에 저장된 이 계정의 로그인 정보와 기록도 지워져요.`)) return;
@@ -404,6 +455,92 @@ $('addBtn').onclick = async () => {
   $('newLabel').value = ''; setMsg($('addMsg'), '추가했어요. 관리자 PC 에 로그인 창이 떠요. 그 PC 앞에서 인스타에 로그인한 뒤, 설정을 넣고 켜세요.', 'ok');
   refresh();
 };
+
+// ── 원격 로그인 ──
+// 서버의 remote 행을 켜면 PC 다리가 다음 동기화(최대 15초) 때 그 계정 창을 열고 화면을 올리기 시작한다.
+// 이 화면은 1.2초마다 새 화면을 받고, 클릭·입력은 remote_events 로 보낸다(PC 가 1초 안에 가져가 실행).
+const REMOTE_MAX_MS = 15 * 60e3;   // 열어 두고 잊어도 15분 뒤엔 끝냄(요청·D1 쓰기 한도)
+const remote = { aid: 0, timer: null, shotAt: 0, busy: false, lastShot: 0, lastPoll: 0, openedAt: 0, opening: false };
+async function openRemote(aid, label) {
+  if (remote.aid || remote.opening) return;
+  remote.opening = true;
+  const r = await call('accRemote', { aid, on: true });
+  remote.opening = false;
+  if (!r.ok) return alert(errText(r.error));
+  remote.aid = aid; remote.shotAt = 0; remote.lastShot = remote.openedAt = Date.now(); remote.lastPoll = 0;
+  $('rTitle').textContent = '원격 로그인 · ' + label;
+  $('rImg').removeAttribute('src'); $('rWait').classList.remove('hidden'); $('rWait').textContent = 'PC 가 창을 여는 중이에요… 보통 20초쯤 걸려요.';
+  $('rState').className = 'badge'; $('rState').textContent = 'PC 연결 중'; $('rUrl').textContent = ''; setMsg($('rMsg'), '');
+  $('rText').value = '';
+  $('remoteView').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+  clearInterval(timer); timer = null;                 // 계정 목록 새로고침은 쉼(요청 수 아끼기)
+  pollRemote(); remote.timer = setInterval(pollRemote, 1200);
+}
+async function closeRemote(why) {
+  if (!remote.aid) return;                           // 끝내기·remote_off 가 겹쳐도 한 번만
+  clearInterval(remote.timer); remote.timer = null;
+  const aid = remote.aid; remote.aid = 0;
+  $('remoteView').classList.add('hidden'); document.body.style.overflow = '';
+  $('rImg').removeAttribute('src');
+  if (why) alert(why);                               // 사용자가 끝낸 게 아니면 왜 닫혔는지 알림
+  await call('accRemote', { aid, on: false });
+  if (token && me) { clearInterval(timer); refresh(); timer = setInterval(refresh, 10000); }
+}
+async function pollRemote() {
+  if (!remote.aid || remote.busy) return;
+  if (Date.now() - remote.openedAt > REMOTE_MAX_MS) return closeRemote('15분이 지나 원격 로그인을 끝냈어요. 필요하면 다시 여세요.');
+  if (document.hidden && Date.now() - remote.lastPoll < 20000) return;   // 다른 앱(인증 문자 확인 등)에 가 있는 동안은 20초마다 살아 있다는 신호만
+  remote.lastPoll = Date.now();
+  remote.busy = true;
+  const aid = remote.aid;
+  const r = await call('remoteShot', { aid, after: remote.shotAt });
+  remote.busy = false;
+  if (aid !== remote.aid) return;
+  if (!r.ok) {
+    if (r.error === 'remote_off') return closeRemote('원격 로그인이 끝났어요(화면을 90초 넘게 비웠거나 PC 쪽에서 끝남). 필요하면 다시 여세요.');
+    if (r.error === 'auth' || r.error === 'not_found') return closeRemote(errText(r.error));
+    return setMsg($('rMsg'), errText(r.error), 'err');
+  }
+  const pcOn = r.now - r.bridgeSeen < PC_FRESH;
+  if (r.shot) { $('rImg').src = 'data:image/jpeg;base64,' + r.shot; remote.shotAt = r.shotAt; remote.lastShot = Date.now(); $('rWait').classList.add('hidden'); }
+  const quiet = r.pcAt ? Math.round((r.now - r.pcAt) / 1000) : 0;   // 다리가 마지막으로 다녀간 뒤 지난 시간(서버 시계 기준)
+  if (!pcOn) { $('rState').className = 'badge warn'; $('rState').textContent = 'PC 꺼짐'; $('rWait').textContent = 'PC 다리가 꺼져 있어요. PC 가 켜지고 다리가 돌아야 화면이 와요.'; }
+  else if (!r.shotAt) { $('rState').className = 'badge'; $('rState').textContent = 'PC 연결 중'; }
+  else if (quiet > 8) { $('rState').className = 'badge warn'; $('rState').textContent = `PC 응답 없음 ${quiet}초`; }
+  else if (r.loggedIn) { $('rState').className = 'badge ok'; $('rState').textContent = '로그인됨 ✓'; }
+  else { $('rState').className = 'badge info'; $('rState').textContent = '화면 보는 중'; }
+  if (r.shotAt && r.loggedIn && !$('rMsg').textContent) setMsg($('rMsg'), '인스타그램에 로그인됐어요. "정보 저장"·"알림" 같은 창까지 넘기고 끝내기를 누르세요. 그 뒤 계정 스위치를 켜면 자동 답장이 시작돼요.', 'ok');
+  $('rUrl').textContent = r.url ? r.url.replace(/^https?:\/\/(www\.)?/, '') : '';
+}
+async function sendEvent(kind, data) {
+  if (!remote.aid) return;
+  const r = await call('remoteEvent', { aid: remote.aid, kind, data });
+  if (!r.ok) { setMsg($('rMsg'), errText(r.error), 'err'); if (r.error === 'remote_off') closeRemote(errText('remote_off')); }
+  else if ($('rMsg').classList.contains('err')) setMsg($('rMsg'), '');
+}
+$('rClose').onclick = () => closeRemote();
+$('rScreen').onclick = (ev) => {
+  if (!$('rImg').getAttribute('src')) return;
+  const b = $('rScreen').getBoundingClientRect();
+  const x = (ev.clientX - b.left) / b.width, y = (ev.clientY - b.top) / b.height;
+  if (x < 0 || x > 1 || y < 0 || y > 1) return;
+  sendEvent('click', { x: +x.toFixed(4), y: +y.toFixed(4) });
+};
+$('rSend').onclick = () => { const t = $('rText').value; if (!t) return; sendEvent('type', { text: t }); $('rText').value = ''; $('rText').focus(); };
+$('rText').onkeydown = (ev) => {   // 글자+Enter 를 한 요청으로(따로 보내면 순서가 뒤바뀔 수 있음)
+  if (ev.key !== 'Enter') return;
+  ev.preventDefault();
+  const t = $('rText').value;
+  if (t) { sendEvent('type', { text: t, enter: true }); $('rText').value = ''; } else sendEvent('key', { key: 'Enter' });
+};
+$('rEnter').onclick = () => sendEvent('key', { key: 'Enter' });
+$('rMask').onchange = () => { $('rText').type = $('rMask').checked ? 'password' : 'text'; };
+document.querySelectorAll('.rc .keys button').forEach((b) => b.onclick = () => {
+  if (b.dataset.key) sendEvent('key', { key: b.dataset.key });
+  else if (b.dataset.scroll) sendEvent('scroll', { dy: +b.dataset.scroll });
+  else if (b.dataset.goto) sendEvent('goto', { to: b.dataset.goto });
+});
+window.addEventListener('pagehide', () => { if (remote.aid) navigator.sendBeacon && navigator.sendBeacon(API, JSON.stringify({ action: 'accRemote', token, aid: remote.aid, on: false })); });
 
 // ── 관리자 ──
 const ST_KO = { active: '사용 중', pending: '승인 대기', blocked: '차단' };
