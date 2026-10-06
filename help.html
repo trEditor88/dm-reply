@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DM 자동 답장 사용 설명서</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
+<style>
+:root{--canvas:#FFFFFF;--parchment:#F5F5F7;--ink:#1D1D1F;--muted:#6E6E73;--border:#E0E0E0;--blue:#0066CC;--blue-focus:#0071E3;--red:#C0392B;--green:#15803D;
+  font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--ink);font-size:1.0625rem;line-height:1.7;word-break:keep-all}
+a{color:var(--blue)} a:focus-visible{outline:2px solid var(--blue-focus);outline-offset:2px}
+.wrap{max-width:760px;margin:0 auto;padding:48px 20px 80px}
+h1{font-size:clamp(2rem,4vw,2.6rem);font-weight:600;letter-spacing:-0.02em;line-height:1.2;margin:0 0 12px}
+h2{font-size:1.5rem;font-weight:600;margin:56px 0 14px;padding-top:8px}
+h3{font-size:1.125rem;font-weight:600;margin:28px 0 8px}
+p{margin:0 0 12px} ol,ul{margin:0 0 14px;padding-left:22px} li{margin-bottom:6px}
+.lead{font-size:1.2rem;color:var(--muted)}
+.toc{background:var(--parchment);border-radius:18px;padding:20px 24px;margin:32px 0}
+.toc ol{margin:8px 0 0;columns:2;column-gap:28px} .toc a{text-decoration:none}
+.b{display:inline-block;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:var(--parchment);font-size:0.9375rem;font-weight:600;white-space:nowrap}
+.note{border-left:3px solid var(--blue);background:var(--parchment);padding:12px 16px;border-radius:0 11px 11px 0;margin:14px 0;font-size:0.975rem}
+.warn{border-left-color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:0.95rem;margin:8px 0 16px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-size:0.85rem;font-weight:600}
+.tbl{overflow-x:auto}
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:0.875rem;color:var(--muted)}
+@media (max-width:640px){.toc ol{columns:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>DM 자동 답장 사용 설명서</h1>
+<p class="lead">인스타그램 DM 이 오면 미리 적어 둔 문구로 대신 답장해 주는 사이트입니다. 가입 → 인스타 로그인 → 답장 내용 저장 → 켜기, 네 단계면 됩니다.</p>
+
+<nav class="toc"><b>차례</b>
+<ol>
+<li><a href="#s1">가입하고 로그인하기</a></li>
+<li><a href="#s2">화면 알아보기</a></li>
+<li><a href="#s3">인스타 계정 연결하기</a></li>
+<li><a href="#s4">답장 내용 정하기</a></li>
+<li><a href="#s5">켜고 기록 보기</a></li>
+<li><a href="#s6">이럴 땐 이렇게</a></li>
+</ol></nav>
+
+<div class="note warn"><b>먼저 알아 두세요.</b> 자동 답장은 인스타그램 약관에 어긋날 수 있어 계정이 제한될 수 있습니다. 중요한 계정이라면 신중하게 쓰세요.</div>
+
+<h2 id="s1">1. 가입하고 로그인하기</h2>
+<ol>
+<li><a href="https://treditor88.github.io/dm-reply/">DM 자동 답장 사이트</a>를 엽니다.</li>
+<li><span class="b">가입</span> 탭을 누릅니다.</li>
+<li><b>아이디</b>(영문 소문자·숫자·_ 3~20자), <b>이름</b>, 비밀번호(6자 이상)를 적습니다.</li>
+<li><span class="b">가입 신청</span>을 누릅니다.</li>
+<li>승인되면 <span class="b">로그인</span> 탭에서 로그인합니다. 승인 전에는 "아직 승인 전이에요" 안내가 나옵니다.</li>
+</ol>
+<p>한 번 로그인하면 30일 동안 유지됩니다.</p>
+
+<h2 id="s2">2. 화면 알아보기</h2>
+<div class="tbl"><table>
+<tr><th>위치</th><th>보이는 것</th><th>뜻</th></tr>
+<tr><td>맨 위</td><td>PC 연결됨 / PC 꺼짐</td><td>답장을 실제로 보내는 PC 가 켜져 있는지 알려 줍니다. 꺼져 있으면 답장이 나가지 않습니다.</td></tr>
+<tr><td>내 인스타 계정</td><td>계정 카드</td><td>연결한 인스타 계정마다 카드가 하나씩 생깁니다. 한 사람당 2개까지 추가할 수 있습니다.</td></tr>
+<tr><td>카드 오른쪽 위</td><td>켜기/끄기 스위치</td><td>자동 답장을 켜고 끕니다.</td></tr>
+<tr><td>카드 안</td><td>상태 표시, 오늘 답장 N/M</td><td>지금 상태와 오늘 보낸 답장 수입니다.</td></tr>
+</table></div>
+<h3>카드 상태 표시</h3>
+<ul>
+<li><b>동작 중</b> — 자동 답장이 돌아가고 있습니다.</li>
+<li><b>꺼짐</b> / <b>로그인됨 · 꺼짐</b> — 꺼 둔 상태입니다. 스위치를 켜면 시작합니다.</li>
+<li><b>로그인 필요</b> — 인스타에 다시 로그인해야 합니다(3장).</li>
+<li><b>PC 꺼짐</b> — PC 가 꺼져 있어 지금은 답장할 수 없습니다.</li>
+<li><b>오류</b> — 문제가 생겼습니다. 계속되면 관리자에게 문의하세요.</li>
+</ul>
+
+<h2 id="s3">3. 인스타 계정 연결하기</h2>
+<ol>
+<li>"계정 추가" 칸에 <b>이름표</b>(예: 내 본계정)를 적고 <span class="b">추가</span>를 누릅니다.</li>
+<li>새로 생긴 카드에서 <span class="b">원격 로그인</span>을 누릅니다. PC 가 인스타 창을 여는 데 20초쯤 걸립니다.</li>
+<li>휴대폰에 인스타 로그인 화면이 보이면, <b>입력칸을 먼저 화면에서 누른 뒤</b> 아래 글자 칸에 적고 <span class="b">보내기</span>를 누릅니다.</li>
+<li>인스타 비밀번호를 칠 때는 <b>입력 가리기</b>를 켜면 글자가 화면에 보이지 않습니다.</li>
+<li><span class="b">Enter</span>로 로그인합니다. 화면은 누른 뒤 2초쯤 지나야 바뀝니다.</li>
+<li>"로그인됐어요" 안내가 나오면 "정보 저장", "알림" 같은 창을 넘기고 <span class="b">끝내기</span>를 누릅니다.</li>
+</ol>
+<div class="note"><b>도움 버튼.</b> <span class="b">⌫ 지우기</span> <span class="b">전체 선택</span> <span class="b">Tab</span> <span class="b">Esc</span> <span class="b">▲ 위로</span> <span class="b">▼ 아래로</span> 는 키보드 대신 씁니다. 엉뚱한 페이지로 갔다면 <span class="b">로그인 페이지로</span>를 누르세요.</div>
+<ul>
+<li>"Facebook 으로 로그인"은 쓸 수 없습니다. 인스타 아이디로 로그인하세요.</li>
+<li>원격 로그인은 최대 15분입니다. 화면을 90초 넘게 다른 앱으로 비워 두면 자동으로 끝납니다. 다시 누르면 이어서 할 수 있습니다.</li>
+<li>동시에 3명까지만 원격 로그인할 수 있습니다. 붐비면 잠시 뒤에 하세요.</li>
+</ul>
+
+<h2 id="s4">4. 답장 내용 정하기</h2>
+<p>카드의 <b>설정</b>을 펼쳐서 적고 <span class="b">저장</span>을 누릅니다. 30초 안에 반영됩니다.</p>
+<div class="tbl"><table>
+<tr><th>칸</th><th>적는 법</th></tr>
+<tr><td>대상</td><td>답장할 사람. DM 목록에 보이는 이름을 <b>글자 하나 틀리지 않게</b> 그대로, 한 줄에 한 명.</td></tr>
+<tr><td>답장 문구</td><td>한 줄에 하나. 여러 개 적으면 그중 하나를 무작위로 보냅니다.</td></tr>
+<tr><td>하루 최대 답장</td><td>1~50 (기본 20)</td></tr>
+<tr><td>같은 사람 다시 답장까지(초)</td><td>같은 사람에게 너무 자주 답하지 않게 하는 간격 (기본 120초)</td></tr>
+<tr><td>보내기 전 대기(초)</td><td>사람처럼 보이도록 잠깐 기다렸다 보냅니다 (기본 5~15초)</td></tr>
+<tr><td>활동 시작·끝(시)</td><td>답장하는 시간대 (기본 8시~23시). 22→6 처럼 적으면 밤새 동작합니다.</td></tr>
+</table></div>
+<div class="note"><b>팁.</b> 대상 이름이 안 맞으면 답장이 나가지 않습니다. 인스타 DM 목록에 보이는 이름을 그대로 복사해 붙이세요.</div>
+
+<h2 id="s5">5. 켜고 기록 보기</h2>
+<ol>
+<li>대상과 답장 문구를 저장했는지 확인합니다.</li>
+<li>카드 오른쪽 위 스위치를 켭니다. 30초 안에 <b>동작 중</b>으로 바뀝니다.</li>
+<li>카드의 <b>기록</b>을 펼치면 최근 100줄의 답장 기록이 보입니다.</li>
+</ol>
+<p>멈추려면 스위치를 끄면 됩니다. 계정을 아예 빼려면 <span class="b">계정 삭제</span>를 누르세요. 그 계정의 로그인 정보와 기록도 함께 지워집니다.</p>
+
+<h2 id="s6">6. 이럴 땐 이렇게</h2>
+<div class="tbl"><table>
+<tr><th>상황</th><th>해결</th></tr>
+<tr><td>"켜려면 대상과 답장 문구를…"</td><td>설정에 대상과 문구를 하나 이상 적고 저장한 뒤 켜세요.</td></tr>
+<tr><td>답장이 안 나가요</td><td>① 맨 위가 PC 연결됨인지 ② 대상 이름이 정확한지 ③ 활동 시간 안인지 ④ 오늘 최대 답장 수를 넘지 않았는지 보세요.</td></tr>
+<tr><td>카드가 "로그인 필요"</td><td>원격 로그인으로 인스타에 다시 로그인하세요.</td></tr>
+<tr><td>"PC 가 아직 앞의 입력을 처리 중이에요"</td><td>2~3초 기다렸다가 다시 누르세요.</td></tr>
+<tr><td>"원격 로그인이 끝났어요"</td><td>15분이 지났거나 화면을 오래 비웠습니다. 원격 로그인을 다시 누르세요.</td></tr>
+<tr><td>"로그인 실패가 많아 15분 동안 잠겼어요"</td><td>15분 뒤에 다시 로그인하세요.</td></tr>
+<tr><td>사이트 비밀번호를 바꾸고 싶어요</td><td>맨 아래 "비밀번호 바꾸기"를 펼쳐 바꾸세요. 바꾼 뒤 다시 로그인합니다.</td></tr>
+<tr><td>그 밖의 문제</td><td>관리자에게 문의하세요. <a href="mailto:workplacejun@gmail.com">workplacejun@gmail.com</a></td></tr>
+</table></div>
+
+<footer>DM 자동 답장 · <a href="https://treditor88.github.io/dm-reply/">사이트 열기</a> · <a href="https://heoworks.pages.dev">HEO Works</a></footer>
+</div>
+</body>
+
+</html>
