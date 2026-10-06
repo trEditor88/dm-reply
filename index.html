@@ -109,7 +109,7 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
   <!-- 로그인·가입 -->
   <section id="authView" class="auth hidden">
     <h2>로그인</h2>
-    <p class="lead">가입하면 관리자가 승인한 뒤 쓸 수 있어요. 자동 답장은 관리자 PC 에서 돌아가고, 인스타 로그인 정보도 그 PC 에 저장돼요.</p>
+    <p class="lead">가입하면 관리자가 승인한 뒤 쓸 수 있어요. 자동 답장은 관리자 PC 에서 돌아가고, 인스타 로그인은 이 사이트에서 그 PC 화면을 보며 해요(로그인 정보는 그 PC 에 저장).</p>
     <div class="tabs" role="tablist">
       <button id="tabLogin" class="on" role="tab" aria-selected="true">로그인</button>
       <button id="tabSignup" role="tab" aria-selected="false">가입</button>
@@ -196,7 +196,7 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
       <button data-goto="login">로그인 페이지로</button>
       <button data-goto="inbox">받은 메시지로</button>
     </div>
-    <div class="sub">화면을 누르면 PC 에서 그 자리를 클릭해요. 2초쯤 뒤에 화면이 바뀌어요. 로그인이 끝나면 "끝내기"를 누르세요. 새 창이 뜨는 "Facebook 으로 로그인"은 여기서 쓸 수 없어요(인스타 아이디·비밀번호로 로그인).</div>
+    <div class="sub">화면을 누르면 PC 에서 그 자리를 클릭해요. 2초쯤 뒤에 화면이 바뀌어요. 로그인이 끝나면 "끝내기"를 누르세요. 새 창이 뜨는 "Facebook 으로 로그인"은 여기서 쓸 수 없어요(인스타 아이디·비밀번호로 로그인). 화면과 입력은 PC 로 가는 동안 서버를 잠깐 거치고, 끝내면 지워져요(기록에는 남지 않음). 15분이 지나면 자동으로 끝나요.</div>
     <div class="msg" id="rMsg" role="status"></div>
   </div>
 </div>
@@ -219,6 +219,7 @@ const ERR = {
   need_cfg: '켜려면 대상과 답장 문구를 하나 이상 넣고 저장해 주세요.', not_found: '계정을 찾을 수 없어요.',
   forbidden: '권한이 없어요.', self: '자기 자신은 바꿀 수 없어요.', bad_status: '잘못된 상태 값이에요.',
   remote_off: '원격 로그인이 끝났어요. 다시 열어 주세요.', bad_event: '보낼 수 없는 입력이에요.', remote_busy: 'PC 가 아직 앞의 입력을 처리 중이에요. 잠시 뒤 다시 해 주세요.',
+  remote_full: '지금 다른 사람이 원격 로그인을 쓰고 있어요(동시 3명까지). 잠시 뒤 다시 해 주세요.',
 };
 const errText = (e) => ERR[e] || ('오류: ' + e);
 
@@ -332,9 +333,7 @@ function stateLine(a, pcOn) {
   const needLogin = pcOn && (a.state === 'login' || a.state === 'new' && a.loginReq);
   return `${stateBadge(a, pcOn)} <span class="sub">오늘 답장 ${Number(a.sent) || 0}/${Number(a.cfg.cap) || 0}</span>` +
     (a.info && pcOn ? `<div class="sub" style="margin-top:6px">${esc(a.info)}</div>` : '') +
-    (needLogin ? (me && me.role === 'admin'
-      ? `<div class="note warn">이 계정은 인스타그램 로그인이 필요해요. 아래 <b>원격 로그인</b>으로 여기서 PC 창을 보며 로그인하거나, 그 PC 앞에서 직접 로그인하세요.</div>`
-      : `<div class="note warn">관리자 PC 에 이 계정의 크롬 창이 떠 있어요. <b>그 PC 앞에서</b> 인스타그램에 로그인해야 시작돼요. (비밀번호는 이 사이트에 적지 마세요)</div>`) : '');
+    (needLogin ? `<div class="note warn">이 계정은 인스타그램 로그인이 필요해요. 아래 <b>원격 로그인</b>을 누르면 관리자 PC 의 크롬 창을 여기서 보며 로그인할 수 있어요. (비밀번호는 그 화면의 인스타 입력칸에만 넣고, 이 사이트 계정 비밀번호와 다르게 쓰세요)</div>` : '');
 }
 
 function updateCard(a, el, pcOn) {
@@ -381,7 +380,7 @@ function accCard(a) {
     </details>
     <details class="lg"><summary>기록</summary><ul class="logs"><li class="empty">불러오는 중…</li></ul></details>
     <div class="actions">
-      ${me && me.role === 'admin' ? '<button class="small rmt">원격 로그인</button>' : ''}
+      <button class="small rmt">원격 로그인</button>
       <button class="ghost small lgn">PC 에 로그인 창 띄우기</button>
       <button class="danger small del">계정 삭제</button>
     </div>
@@ -418,7 +417,7 @@ function bindCard(aid, el) {
     setMsg(msg, r.ok ? (cancel ? 'PC 의 로그인 창을 닫으라고 보냈어요.' : 'PC 에 로그인 창을 띄우라고 보냈어요. 그 PC 앞에서 로그인하세요.') : errText(r.error), r.ok ? 'ok' : 'err');
     if (r.ok) refresh();
   };
-  if (q('.rmt')) q('.rmt').onclick = () => openRemote(aid, q('.title').textContent);
+  q('.rmt').onclick = () => openRemote(aid, q('.title').textContent);
   q('.del').onclick = async () => {
     const label = q('.title').textContent;
     if (!confirm(`"${label}" 계정을 삭제할까요?\nPC 에 저장된 이 계정의 로그인 정보와 기록도 지워져요.`)) return;
@@ -452,7 +451,7 @@ $('addBtn').onclick = async () => {
   if (!label) return setMsg($('addMsg'), errText('bad_label'), 'err');
   const r = await call('accCreate', { label });
   if (!r.ok) return setMsg($('addMsg'), errText(r.error), 'err');
-  $('newLabel').value = ''; setMsg($('addMsg'), '추가했어요. 관리자 PC 에 로그인 창이 떠요. 그 PC 앞에서 인스타에 로그인한 뒤, 설정을 넣고 켜세요.', 'ok');
+  $('newLabel').value = ''; setMsg($('addMsg'), '추가했어요. 카드의 "원격 로그인"으로 인스타에 로그인한 뒤, 설정을 넣고 켜세요.', 'ok');
   refresh();
 };
 
