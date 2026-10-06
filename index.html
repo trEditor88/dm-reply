@@ -131,7 +131,7 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
   <!-- 내 계정 -->
   <section id="appView" class="hidden">
     <h2>내 인스타 계정</h2>
-    <p class="lead">대상에게서 새 DM 이 오면 정한 문구 중 하나로 자동 답장해요. 실제 작업은 관리자 PC 에서 돌아가요.</p>
+    <p class="lead">대상에게서 새 DM 이 오면 정한 문구 중 하나로 자동 답장해요.</p>
     <div id="accList"></div>
     <div class="card" id="addCard">
       <div class="title" style="font-size:16px">계정 추가</div>
@@ -148,7 +148,7 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
   <!-- 관리자 -->
   <section id="adminView" class="hidden">
     <h2>관리자</h2>
-    <p class="lead">가입 승인·차단, 다른 회원 계정의 비상 정지와 원격(그 계정 창을 보며 로그인 도와주기). 다른 회원의 대상·문구·기록은 보이지 않아요.</p>
+    <p class="lead">가입 승인·차단, 다른 회원 계정의 비상 정지. 다른 회원의 대상·문구·기록은 보이지 않아요.</p>
     <div class="card"><div class="title" style="font-size:16px;margin-bottom:8px">회원</div><div id="userTable"></div></div>
     <div class="card"><div class="title" style="font-size:16px;margin-bottom:8px">다른 회원의 계정</div><div id="otherTable"></div></div>
   </section>
@@ -337,7 +337,7 @@ function stateLine(a, pcOn) {
   const needLogin = pcOn && (a.state === 'login' || a.state === 'new' && a.loginReq);
   return `${stateBadge(a, pcOn)} <span class="sub">오늘 답장 ${Number(a.sent) || 0}/${Number(a.cfg.cap) || 0}</span>` +
     (a.info && pcOn ? `<div class="sub" style="margin-top:6px">${esc(a.info)}</div>` : '') +
-    (needLogin ? `<div class="note warn">이 계정은 인스타그램 로그인이 필요해요. 아래 <b>원격 로그인</b>을 누르면 관리자 PC 의 크롬 창을 여기서 보며 로그인할 수 있어요. (비밀번호는 그 화면의 인스타 입력칸에만 넣고, 이 사이트 계정 비밀번호와 다르게 쓰세요)</div>` : '');
+    (needLogin ? `<div class="note warn">이 계정은 인스타그램 로그인이 필요해요. 아래 <b>원격 로그인</b>을 누르면 여기서 바로 인스타그램에 로그인할 수 있어요. (비밀번호는 그 화면의 인스타 입력칸에만 넣고, 이 사이트 계정 비밀번호와 다르게 쓰세요)</div>` : '');
 }
 
 function updateCard(a, el, pcOn) {
