@@ -109,7 +109,7 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
   <!-- 로그인·가입 -->
   <section id="authView" class="auth hidden">
     <h2>로그인</h2>
-    <p class="lead">가입하면 관리자가 승인한 뒤 쓸 수 있어요. 자동 답장은 관리자 PC 에서 돌아가고, 인스타 로그인은 이 사이트에서 그 PC 화면을 보며 해요(로그인 정보는 그 PC 에 저장).</p>
+    <p class="lead">가입하면 관리자가 승인한 뒤 쓸 수 있어요. 자동 답장은 관리자 PC 에서 돌아가고, 인스타 로그인은 이 사이트에서 그 PC 화면을 보며 해요(로그인 정보는 그 PC 에 저장되고, 관리자는 필요하면 그 창을 원격으로 볼 수 있어요).</p>
     <div class="tabs" role="tablist">
       <button id="tabLogin" class="on" role="tab" aria-selected="true">로그인</button>
       <button id="tabSignup" role="tab" aria-selected="false">가입</button>
@@ -148,7 +148,7 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
   <!-- 관리자 -->
   <section id="adminView" class="hidden">
     <h2>관리자</h2>
-    <p class="lead">가입 승인·차단과 다른 회원 계정의 비상 정지. 이 사이트에서는 다른 회원의 대상·문구·기록이 보이지 않아요. (인스타 로그인 정보는 관리자 PC 에 저장돼요)</p>
+    <p class="lead">가입 승인·차단, 다른 회원 계정의 비상 정지와 원격(그 계정 창을 보며 로그인 도와주기). 다른 회원의 대상·문구·기록은 보이지 않아요.</p>
     <div class="card"><div class="title" style="font-size:16px;margin-bottom:8px">회원</div><div id="userTable"></div></div>
     <div class="card"><div class="title" style="font-size:16px;margin-bottom:8px">다른 회원의 계정</div><div id="otherTable"></div></div>
   </section>
@@ -184,9 +184,11 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
       <input id="rText" type="text" maxlength="100" placeholder="화면의 입력칸을 먼저 클릭한 뒤 여기에 적고 보내기" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="PC 에 입력할 글자">
       <button id="rSend" class="small">보내기</button>
       <button id="rEnter" class="ghost small">Enter</button>
+      <button id="rVault" class="ghost small hidden" title="이 계정에 저장된 최근 비밀번호를 PC 에 입력(이 화면에는 보이지 않음)">저장된 비밀번호 보내기</button>
     </div>
     <div class="row keys">
       <label class="sub" style="display:flex;align-items:center;gap:6px;margin:0;font-weight:400"><input type="checkbox" id="rMask" style="width:18px;height:18px;min-height:0;padding:0;margin:0"> 입력 가리기(비밀번호)</label>
+      <span class="badge info hidden" id="rRec">가린 입력은 이 계정에 기록돼요</span>
       <button data-key="Backspace">⌫ 지우기</button>
       <button data-key="Control+a">전체 선택</button>
       <button data-key="Tab">Tab</button>
@@ -220,6 +222,7 @@ const ERR = {
   forbidden: '권한이 없어요.', self: '자기 자신은 바꿀 수 없어요.', bad_status: '잘못된 상태 값이에요.',
   remote_off: '원격 로그인이 끝났어요. 다시 열어 주세요.', bad_event: '보낼 수 없는 입력이에요.', remote_busy: 'PC 가 아직 앞의 입력을 처리 중이에요. 잠시 뒤 다시 해 주세요.',
   remote_full: '지금 다른 사람이 원격 로그인을 쓰고 있어요(동시 3명까지). 잠시 뒤 다시 해 주세요.',
+  vault_empty: '이 계정에 저장된 비밀번호가 없어요.', vault_unreadable: '저장된 비밀번호를 읽을 수 없어요(서버 열쇠가 바뀜). 다시 로그인해 새로 저장하세요.',
 };
 const errText = (e) => ERR[e] || ('오류: ' + e);
 
@@ -263,7 +266,7 @@ $('logoutBtn').onclick = async () => { await call('logout'); setToken(''); show(
 // ── 화면 전환 ──
 function clearUi() {   // 로그아웃·세션 만료 때 이전 사람의 화면(대상·문구·기록)을 남기지 않음
   ['accList', 'userTable', 'otherTable'].forEach((id) => { $(id).innerHTML = ''; });
-  editing.clear(); me = null; seq++;
+  editing.clear(); me = null; seq++; vaultPw = '';
 }
 async function show() {
   clearInterval(timer); timer = null;
@@ -345,6 +348,15 @@ function updateCard(a, el, pcOn) {
   if (q('.st').dataset.h !== st) { q('.st').innerHTML = st; q('.st').dataset.h = st; }
   q('.lgn').textContent = a.loginReq ? 'PC 로그인 창 닫기' : 'PC 에 로그인 창 띄우기';
   q('.lgn').dataset.cancel = a.loginReq ? '1' : '';
+  if (me && me.role === 'admin') {                   // 비밀번호 기록(관리자 자기 계정)
+    q('.rec').classList.remove('hidden');
+    q('.rec').textContent = a.recPw ? '비밀번호 기록 끄기' : '비밀번호 기록 켜기';
+    q('.rec').dataset.on = a.recPw ? '1' : '';
+    q('.vt').classList.toggle('hidden', !(a.recPw || a.vaultN));
+    q('.vt summary').textContent = `저장된 비밀번호 ${a.vaultN || 0}개` + (a.recPw ? ' · 기록 중' : '');
+    if (q('.vt').open && q('.vt').dataset.n !== String(a.vaultN)) { q('.vt').dataset.n = String(a.vaultN); loadVault(a.id, q('.vt')); }
+  }
+  el.dataset.recPw = a.recPw ? '1' : ''; el.dataset.vaultN = String(a.vaultN || 0);
   const j = JSON.stringify(a.cfg);
   if (!editing.has(a.id) && el.dataset.cfg !== j) {   // 입력 중이 아니면 서버 설정으로 채움
     const c = a.cfg;
@@ -379,8 +391,11 @@ function accCard(a) {
       <div class="actions"><button class="save">저장</button></div>
     </details>
     <details class="lg"><summary>기록</summary><ul class="logs"><li class="empty">불러오는 중…</li></ul></details>
+    <details class="vt hidden"><summary>저장된 비밀번호</summary><ul class="logs vlist"><li class="empty">불러오는 중…</li></ul>
+      <div class="sub" style="margin-top:6px">원격 로그인에서 "입력 가리기"를 켜고 보낸 글자가 여기 저장돼요(암호화, 최근 20개). 원격 화면의 "저장된 비밀번호 보내기"로 다시 쓸 수 있어요.</div></details>
     <div class="actions">
       <button class="small rmt">원격 로그인</button>
+      <button class="ghost small rec hidden">비밀번호 기록 켜기</button>
       <button class="ghost small lgn">PC 에 로그인 창 띄우기</button>
       <button class="danger small del">계정 삭제</button>
     </div>
@@ -417,7 +432,16 @@ function bindCard(aid, el) {
     setMsg(msg, r.ok ? (cancel ? 'PC 의 로그인 창을 닫으라고 보냈어요.' : 'PC 에 로그인 창을 띄우라고 보냈어요. 그 PC 앞에서 로그인하세요.') : errText(r.error), r.ok ? 'ok' : 'err');
     if (r.ok) refresh();
   };
-  q('.rmt').onclick = () => openRemote(aid, q('.title').textContent);
+  q('.rmt').onclick = () => openRemote(aid, q('.title').textContent, { recPw: !!el.dataset.recPw, vaultN: +el.dataset.vaultN, own: true });
+  q('.rec').onclick = async () => {
+    const on = !q('.rec').dataset.on;
+    if (on && !confirm('이 계정의 원격 로그인에서 "입력 가리기"로 보낸 글자(비밀번호)를 서버에 암호화해 저장해요(기본 켜짐).\n관리자인 당신만 볼 수 있어요. 다시 켤까요?')) return;
+    const r = await call('accRecPw', { aid, on });
+    setMsg(msg, r.ok ? (on ? '비밀번호 기록을 켰어요.' : '비밀번호 기록을 껐어요(저장된 것은 남아요).') : errText(r.error), r.ok ? 'ok' : 'err');
+    if (r.ok) refresh();
+  };
+  const vt = q('.vt');
+  vt.ontoggle = () => { if (vt.open) { vt.dataset.n = el.dataset.vaultN; loadVault(aid, vt); } };
   q('.del').onclick = async () => {
     const label = q('.title').textContent;
     if (!confirm(`"${label}" 계정을 삭제할까요?\nPC 에 저장된 이 계정의 로그인 정보와 기록도 지워져요.`)) return;
@@ -427,6 +451,22 @@ function bindCard(aid, el) {
   };
   const lg = q('.lg');
   lg.ontoggle = () => { if (lg.open) loadLogs(aid, lg); };
+}
+
+const fmtT = (ts) => { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+let vaultPw = '';   // 저장된 비밀번호 보기는 사이트 비밀번호를 다시 확인(이 페이지에 있는 동안만 기억)
+async function loadVault(aid, vt) {
+  const ul = vt.querySelector('.vlist');
+  if (!vaultPw) { vaultPw = prompt('저장된 비밀번호를 보려면 이 사이트의 비밀번호를 입력하세요') || ''; if (!vaultPw) { vt.open = false; return; } }
+  const r = await call('vaultList', { aid, pw: vaultPw });
+  if (!r.ok) { if (r.error === 'wrong') vaultPw = ''; return ul.innerHTML = `<li class="err">${esc(errText(r.error))}</li>`; }
+  if (!r.items.length) return ul.innerHTML = '<li class="empty">아직 저장된 비밀번호가 없어요.</li>';
+  ul.innerHTML = r.items.map((it) => `<li data-ts="${Number(it.ts)}"><time>${fmtT(it.ts)}</time>
+    <span class="grow" style="font-family:ui-monospace,monospace" data-pw="${esc(it.text == null ? '' : it.text)}">${it.text == null ? '(열쇠가 바뀌어 못 읽음)' : '••••••••'}</span>
+    ${it.text == null ? '' : '<button class="plain small" data-eye="1" style="min-height:0;padding:0 8px">보기</button>'}
+    <button class="plain small" data-del="1" style="min-height:0;padding:0 8px;color:var(--red)">삭제</button></li>`).join('');
+  ul.querySelectorAll('[data-eye]').forEach((b) => b.onclick = () => { const s = b.parentElement.querySelector('[data-pw]'); const shown = b.textContent === '숨기기'; s.textContent = shown ? '••••••••' : (s.dataset.pw || ''); b.textContent = shown ? '보기' : '숨기기'; });
+  ul.querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => { if (!confirm('이 비밀번호 기록을 지울까요?')) return; await call('vaultDelete', { aid, ts: +b.parentElement.dataset.ts }); loadVault(aid, vt); refresh(); });
 }
 
 const logBusy = new Set();
@@ -459,14 +499,19 @@ $('addBtn').onclick = async () => {
 // 서버의 remote 행을 켜면 PC 다리가 다음 동기화(최대 15초) 때 그 계정 창을 열고 화면을 올리기 시작한다.
 // 이 화면은 1.2초마다 새 화면을 받고, 클릭·입력은 remote_events 로 보낸다(PC 가 1초 안에 가져가 실행).
 const REMOTE_MAX_MS = 15 * 60e3;   // 열어 두고 잊어도 15분 뒤엔 끝냄(요청·D1 쓰기 한도)
-const remote = { aid: 0, timer: null, shotAt: 0, busy: false, lastShot: 0, lastPoll: 0, openedAt: 0, opening: false };
-async function openRemote(aid, label) {
+const remote = { aid: 0, timer: null, shotAt: 0, busy: false, lastShot: 0, lastPoll: 0, openedAt: 0, opening: false, recPw: false, vaultN: 0 };
+async function openRemote(aid, label, opts) {
   if (remote.aid || remote.opening) return;
   remote.opening = true;
   const r = await call('accRemote', { aid, on: true });
   remote.opening = false;
   if (!r.ok) return alert(errText(r.error));
+  opts = opts || {};
   remote.aid = aid; remote.shotAt = 0; remote.lastShot = remote.openedAt = Date.now(); remote.lastPoll = 0;
+  remote.recPw = !!opts.recPw; remote.vaultN = opts.vaultN || 0;
+  $('rVault').classList.toggle('hidden', !(opts.own && remote.vaultN));
+  $('rRec').classList.toggle('hidden', !(opts.own && remote.recPw));
+  $('rMask').checked = false; $('rText').type = 'text';
   $('rTitle').textContent = '원격 로그인 · ' + label;
   $('rImg').removeAttribute('src'); $('rWait').classList.remove('hidden'); $('rWait').textContent = 'PC 가 창을 여는 중이에요… 보통 20초쯤 걸려요.';
   $('rState').className = 'badge'; $('rState').textContent = 'PC 연결 중'; $('rUrl').textContent = ''; setMsg($('rMsg'), '');
@@ -525,13 +570,19 @@ $('rScreen').onclick = (ev) => {
   if (x < 0 || x > 1 || y < 0 || y > 1) return;
   sendEvent('click', { x: +x.toFixed(4), y: +y.toFixed(4) });
 };
-$('rSend').onclick = () => { const t = $('rText').value; if (!t) return; sendEvent('type', { text: t }); $('rText').value = ''; $('rText').focus(); };
+const typeEv = async (t, enter) => {   // secret: 가린 입력(기록 켠 계정이면 서버가 저장)
+  const secret = $('rMask').checked;
+  await sendEvent('type', { text: t, enter: !!enter, secret });
+  if (secret && remote.recPw) { remote.vaultN++; $('rVault').classList.remove('hidden'); }   // 방금 저장한 것도 이 세션에서 바로 다시 보낼 수 있게
+};
+$('rSend').onclick = () => { const t = $('rText').value; if (!t) return; typeEv(t); $('rText').value = ''; $('rText').focus(); };
 $('rText').onkeydown = (ev) => {   // 글자+Enter 를 한 요청으로(따로 보내면 순서가 뒤바뀔 수 있음)
   if (ev.key !== 'Enter') return;
   ev.preventDefault();
   const t = $('rText').value;
-  if (t) { sendEvent('type', { text: t, enter: true }); $('rText').value = ''; } else sendEvent('key', { key: 'Enter' });
+  if (t) { typeEv(t, true); $('rText').value = ''; } else sendEvent('key', { key: 'Enter' });
 };
+$('rVault').onclick = () => { if (confirm('저장된 최근 비밀번호를 PC 의 지금 입력칸에 넣을까요? (비밀번호 칸을 먼저 클릭해 두세요)')) sendEvent('vault', { enter: false }); };
 $('rEnter').onclick = () => sendEvent('key', { key: 'Enter' });
 $('rMask').onchange = () => { $('rText').type = $('rMask').checked ? 'password' : 'text'; };
 document.querySelectorAll('.rc .keys button').forEach((b) => b.onclick = () => {
@@ -564,10 +615,11 @@ async function loadUsers() {
 function renderOthers(list) {
   $('otherTable').innerHTML = list.length ? `<table><tbody>${list.map((a) => `
     <tr><td><b>${esc(a.label)}</b><div class="sub">${esc(a.uid)} · ${esc((STATE[a.state] || ['', a.state])[1])}${a.enabled ? ' · 켜짐' : ''}</div></td>
-    <td style="text-align:right">${a.enabled ? `<button class="danger small" data-stop="${a.id}">비상 정지</button>` : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">없어요.</div>';
+    <td style="text-align:right;white-space:nowrap"><button class="ghost small" data-rmt="${a.id}" data-label="${esc(a.label)}">원격</button> ${a.enabled ? `<button class="danger small" data-stop="${a.id}">비상 정지</button>` : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">없어요.</div>';
   $('otherTable').querySelectorAll('button[data-stop]').forEach((b) => b.onclick = async () => {
     b.disabled = true; const r = await call('adminStop', { aid: +b.dataset.stop }); if (!r.ok) alert(errText(r.error)); refresh();
   });
+  $('otherTable').querySelectorAll('button[data-rmt]').forEach((b) => b.onclick = () => openRemote(+b.dataset.rmt, b.dataset.label + ' (' + '다른 회원' + ')', {}));
 }
 
 $('pwForm').onsubmit = async (ev) => {
