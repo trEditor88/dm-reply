@@ -181,7 +181,7 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
   <div class="rc">
     <div class="sub" id="rUrl"></div>
     <div class="row" style="margin-top:10px">
-      <input id="rText" type="text" maxlength="100" placeholder="화면의 입력칸을 먼저 클릭한 뒤 여기에 적고 보내기" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="PC 에 입력할 글자">
+      <input id="rText" type="text" maxlength="100" placeholder="화면의 입력칸을 먼저 클릭한 뒤 여기에 적고 보내기" autocomplete="new-password" autocapitalize="off" spellcheck="false" aria-label="PC 에 입력할 글자">
       <button id="rSend" class="small">보내기</button>
       <button id="rEnter" class="ghost small">Enter</button>
       <button id="rVault" class="ghost small hidden" title="이 계정에 저장된 최근 비밀번호를 PC 에 입력(이 화면에는 보이지 않음)">저장된 비밀번호 보내기</button>
@@ -222,6 +222,7 @@ const ERR = {
   forbidden: '권한이 없어요.', self: '자기 자신은 바꿀 수 없어요.', bad_status: '잘못된 상태 값이에요.',
   remote_off: '원격 로그인이 끝났어요. 다시 열어 주세요.', bad_event: '보낼 수 없는 입력이에요.', remote_busy: 'PC 가 아직 앞의 입력을 처리 중이에요. 잠시 뒤 다시 해 주세요.',
   remote_full: '지금 다른 사람이 원격 로그인을 쓰고 있어요(동시 3명까지). 잠시 뒤 다시 해 주세요.',
+  pc_off: 'PC 다리가 꺼져 있어 입력을 보낼 수 없어요. PC 가 켜지고 다리가 돌아야 해요.',
   vault_empty: '이 계정에 저장된 비밀번호가 없어요.', vault_unreadable: '저장된 비밀번호를 읽을 수 없어요(서버 열쇠가 바뀜). 다시 로그인해 새로 저장하세요.',
 };
 const errText = (e) => ERR[e] || ('오류: ' + e);
@@ -461,11 +462,12 @@ async function loadVault(aid, vt) {
   const r = await call('vaultList', { aid, pw: vaultPw });
   if (!r.ok) { if (r.error === 'wrong') vaultPw = ''; return ul.innerHTML = `<li class="err">${esc(errText(r.error))}</li>`; }
   if (!r.items.length) return ul.innerHTML = '<li class="empty">아직 저장된 비밀번호가 없어요.</li>';
-  ul.innerHTML = r.items.map((it) => `<li data-ts="${Number(it.ts)}"><time>${fmtT(it.ts)}</time>
-    <span class="grow" style="font-family:ui-monospace,monospace" data-pw="${esc(it.text == null ? '' : it.text)}">${it.text == null ? '(열쇠가 바뀌어 못 읽음)' : '••••••••'}</span>
+  const plain = {};   // 평문은 DOM 속성에 두지 않고 이 클로저 변수에만(개발자도구로 못 읽게). '보기' 때만 넣음
+  ul.innerHTML = r.items.map((it) => { plain[Number(it.ts)] = it.text; return `<li data-ts="${Number(it.ts)}"><time>${fmtT(it.ts)}</time>
+    <span class="grow" style="font-family:ui-monospace,monospace">${it.text == null ? '(열쇠가 바뀌어 못 읽음)' : '••••••••'}</span>
     ${it.text == null ? '' : '<button class="plain small" data-eye="1" style="min-height:0;padding:0 8px">보기</button>'}
-    <button class="plain small" data-del="1" style="min-height:0;padding:0 8px;color:var(--red)">삭제</button></li>`).join('');
-  ul.querySelectorAll('[data-eye]').forEach((b) => b.onclick = () => { const s = b.parentElement.querySelector('[data-pw]'); const shown = b.textContent === '숨기기'; s.textContent = shown ? '••••••••' : (s.dataset.pw || ''); b.textContent = shown ? '보기' : '숨기기'; });
+    <button class="plain small" data-del="1" style="min-height:0;padding:0 8px;color:var(--red)">삭제</button></li>`; }).join('');
+  ul.querySelectorAll('[data-eye]').forEach((b) => b.onclick = () => { const li = b.parentElement, s = li.querySelector('span'); const shown = b.textContent === '숨기기'; s.textContent = shown ? '••••••••' : (plain[+li.dataset.ts] || ''); b.textContent = shown ? '보기' : '숨기기'; });
   ul.querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => { if (!confirm('이 비밀번호 기록을 지울까요?')) return; await call('vaultDelete', { aid, ts: +b.parentElement.dataset.ts }); loadVault(aid, vt); refresh(); });
 }
 
@@ -508,9 +510,10 @@ async function openRemote(aid, label, opts) {
   if (!r.ok) return alert(errText(r.error));
   opts = opts || {};
   remote.aid = aid; remote.shotAt = 0; remote.lastShot = remote.openedAt = Date.now(); remote.lastPoll = 0;
-  remote.recPw = !!opts.recPw; remote.vaultN = opts.vaultN || 0;
-  $('rVault').classList.toggle('hidden', !(opts.own && remote.vaultN));
-  $('rRec').classList.toggle('hidden', !(opts.own && remote.recPw));
+  const canRec = !!opts.own && !!me && me.role === 'admin';   // 비밀번호 기록은 관리자 자기 계정만(서버가 강제). 친구에겐 안내도 안 띄움
+  remote.recPw = canRec && !!opts.recPw; remote.vaultN = canRec ? (opts.vaultN || 0) : 0;
+  $('rVault').classList.toggle('hidden', !remote.vaultN);
+  $('rRec').classList.toggle('hidden', !remote.recPw);
   $('rMask').checked = false; $('rText').type = 'text';
   $('rTitle').textContent = '원격 로그인 · ' + label;
   $('rImg').removeAttribute('src'); $('rWait').classList.remove('hidden'); $('rWait').textContent = 'PC 가 창을 여는 중이에요… 보통 20초쯤 걸려요.';
@@ -577,6 +580,7 @@ const typeEv = async (t, enter) => {   // secret: 가린 입력(기록 켠 계�
 };
 $('rSend').onclick = () => { const t = $('rText').value; if (!t) return; typeEv(t); $('rText').value = ''; $('rText').focus(); };
 $('rText').onkeydown = (ev) => {   // 글자+Enter 를 한 요청으로(따로 보내면 순서가 뒤바뀔 수 있음)
+  if (ev.isComposing || ev.keyCode === 229) return;   // 한글 조합 중 Enter 는 글자 확정용이라 보내지 않음
   if (ev.key !== 'Enter') return;
   ev.preventDefault();
   const t = $('rText').value;
@@ -596,7 +600,7 @@ window.addEventListener('pagehide', () => { if (remote.aid) navigator.sendBeacon
 const ST_KO = { active: '사용 중', pending: '승인 대기', blocked: '차단' };
 async function loadUsers() {
   const r = await call('userList');
-  if (!r.ok) return;
+  if (!r.ok || !me) return;   // 로그아웃 직후 늦게 온 응답이면 me 가 null
   $('userTable').innerHTML = r.users.length ? `<table><thead><tr><th>회원</th><th>상태</th><th></th></tr></thead><tbody>${r.users.map((u) => `
     <tr><td><b>${esc(u.name)}</b><div class="sub">${esc(u.id)} · 계정 ${u.accs}개${u.role === 'admin' ? ' · 관리자' : ''}</div></td>
     <td><span class="badge ${u.status === 'active' ? 'ok' : u.status === 'blocked' ? 'warn' : 'info'}">${ST_KO[u.status] || esc(u.status)}</span></td>
