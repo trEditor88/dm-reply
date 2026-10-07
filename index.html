@@ -73,6 +73,19 @@ button.small{padding:6px 14px;min-height:34px;font-size:14px}
 .logs li{padding:8px 12px;border-bottom:1px solid var(--hairline);display:flex;gap:10px}
 .logs li:last-child{border-bottom:0}
 .logs time{color:var(--ink-48);flex:none;font-variant-numeric:tabular-nums}
+.chk{display:flex;align-items:center;gap:8px;font-weight:600;margin:16px 0 6px;cursor:pointer}
+.chk input{width:20px;height:20px;min-height:0;margin:0;accent-color:var(--blue)}
+.mixrow{display:flex;align-items:center;gap:8px;margin:6px 0}
+.mixrow .e{font-size:22px;width:32px;text-align:center;flex:none}
+.mixrow input{width:88px;flex:none}
+.mixrow .bar{flex:1;height:8px;background:#fff;border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.mixrow .bar i{display:block;height:100%;background:var(--blue);transition:width .15s ease}
+.mixrow .x{min-height:36px;width:36px;padding:0;background:#fff;color:var(--muted);border:1px solid var(--border)}
+.emojis{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.emojis button{background:#fff;color:var(--ink);border:1px solid var(--border);font-size:20px;padding:4px 12px;min-height:40px}
+.emojis button[aria-pressed=true]{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue) inset}
+.mixSum.bad{color:var(--red)}
+.rcbox[hidden]{display:none}
 .logs .sent{color:var(--green)} .logs .err{color:var(--red)} .logs .skip{color:var(--muted)}
 details summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:15px;margin-top:16px;list-style:none}
 details summary::-webkit-details-marker{display:none}
@@ -223,7 +236,7 @@ const ERR = {
   bad_id: '아이디는 영문 소문자·숫자·_ 3~20자로 해 주세요.', bad_pw: '비밀번호는 6자 이상으로 해 주세요.',
   id_taken: '이미 있는 아이디예요.', signup_limit: '오늘 가입 가능한 수를 넘었어요. 내일 다시 해 주세요.',
   bad_label: '이름표를 적어 주세요.', acc_limit: '계정은 한 사람당 2개까지예요.', acc_total: 'PC 가 감당할 수 있는 계정 수가 다 찼어요.',
-  need_cfg: '켜려면 대상과 답장 문구를 하나 이상 넣고 저장해 주세요.', not_found: '계정을 찾을 수 없어요.',
+  need_cfg: '켜려면 대상을 넣고, 답장 문구나 자동 공감 중 하나는 켜서 저장해 주세요.', not_found: '계정을 찾을 수 없어요.',
   forbidden: '권한이 없어요.', self: '자기 자신은 바꿀 수 없어요.', bad_status: '잘못된 상태 값이에요.',
   remote_off: '원격 로그인이 끝났어요. 다시 열어 주세요.', bad_event: '보낼 수 없는 입력이에요.', remote_busy: 'PC 가 아직 앞의 입력을 처리 중이에요. 잠시 뒤 다시 해 주세요.',
   remote_full: '지금 다른 사람이 원격 로그인을 쓰고 있어요(동시 3명까지). 잠시 뒤 다시 해 주세요.',
@@ -340,7 +353,9 @@ function renderAccounts(list, pcOn) {
 
 function stateLine(a, pcOn) {
   const needLogin = pcOn && (a.state === 'login' || a.state === 'new' && a.loginReq);
-  return `${stateBadge(a, pcOn)} <span class="sub">오늘 답장 ${Number(a.sent) || 0}/${Number(a.cfg.cap) || 0}</span>` +
+  const rc = (a.cfg && a.cfg.react) || {};
+  return `${stateBadge(a, pcOn)} <span class="sub">오늘 답장 ${Number(a.sent) || 0}/${Number(a.cfg.cap) || 0}` +
+    (rc.on ? ` · 공감 ${Number(a.reacted) || 0}/${Number(rc.cap) || 0}` : '') + `</span>` +
     (a.info && pcOn ? `<div class="sub" style="margin-top:6px">${esc(a.info)}</div>` : '') +
     (needLogin ? `<div class="note warn">이 계정은 인스타그램 로그인이 필요해요. 아래 <b>원격 로그인</b>을 누르면 여기서 바로 인스타그램에 로그인할 수 있어요. (비밀번호는 그 화면의 인스타 입력칸에만 넣고, 이 사이트 계정 비밀번호와 다르게 쓰세요)</div>` : '');
 }
@@ -349,7 +364,7 @@ function updateCard(a, el, pcOn) {
   const q = (s) => el.querySelector(s);
   q('.title').textContent = a.label;
   q('.en').checked = !!a.enabled;                    // 관리자 비상 정지 등 서버 값을 항상 따름
-  q('.en').setAttribute('aria-label', a.label + ' 자동 답장 켜기');
+  q('.en').setAttribute('aria-label', a.label + ' 자동 답장·공감 켜기');
   const st = stateLine(a, pcOn);
   if (q('.st').dataset.h !== st) { q('.st').innerHTML = st; q('.st').dataset.h = st; }
   q('.lgn').textContent = a.loginReq ? 'PC 로그인 창 닫기' : 'PC 에 로그인 창 띄우기';
@@ -369,6 +384,10 @@ function updateCard(a, el, pcOn) {
     q('.tg').value = c.targets.join('\n'); q('.rp').value = c.replies.join('\n');
     q('.cap').value = c.cap; q('.cd').value = c.cooldown; q('.d0').value = c.delay[0]; q('.d1').value = c.delay[1];
     q('.h0').value = c.hours[0]; q('.h1').value = c.hours[1];
+    q('.rpOn').checked = c.replyOn !== false;
+    const rc = c.react || {};
+    q('.rcOn').checked = !!rc.on; q('.rcap').value = rc.cap || 20; q('.rcbox').hidden = !rc.on;
+    renderMix(el, rc.mix && rc.mix.length ? rc.mix : [{ e: '❤️', p: 100 }]);
     el.dataset.cfg = j;
   }
   if (q('.lg').open) loadLogs(a.id, q('.lg'));
@@ -384,8 +403,18 @@ function accCard(a) {
     <details class="cfg"><summary>설정</summary>
       <label>대상 <span class="hint">DM 목록에 보이는 이름 그대로(정확히 같아야 함), 한 줄에 하나</span></label>
       <textarea class="tg" rows="2" maxlength="450"></textarea>
+      <label class="chk"><input type="checkbox" class="rpOn"> 답장 보내기</label>
       <label>답장 문구 <span class="hint">한 줄에 하나, 이 중 하나를 무작위로 보냄</span></label>
       <textarea class="rp" rows="3" maxlength="2100"></textarea>
+      <label class="chk"><input type="checkbox" class="rcOn"> 자동 공감 누르기 <span class="hint">새 메시지마다 아래 확률대로 이모지 하나</span></label>
+      <div class="rcbox" hidden>
+        <div class="mix"></div>
+        <div class="sub mixSum"></div>
+        <div class="emojis" role="group" aria-label="공감 이모지 추가">${['❤️', '😂', '👍', '😮', '😢', '🔥'].map((e) => `<button type="button" data-add="${e}" aria-pressed="false">${e}</button>`).join('')}</div>
+        <input class="emc" type="text" maxlength="16" placeholder="직접 입력 후 Enter (예: 🥰)" aria-label="공감 이모지 직접 입력" style="margin-top:8px">
+        <div class="grid2"><div><label>하루 최대 공감</label><input class="rcap" type="number" min="1" max="100"></div></div>
+        <p class="hint" style="margin:6px 0 0">답장도 켜져 있으면 공감을 누른 뒤 이어서 답장해요. 대상·대기 시간·활동 시간은 답장과 같이 써요.</p>
+      </div>
       <div class="grid2">
         <div><label>하루 최대 답장</label><input class="cap" type="number" min="1" max="50"></div>
         <div><label>같은 사람 다시 답장까지(초)</label><input class="cd" type="number" min="30" max="3600"></div>
@@ -410,11 +439,55 @@ function accCard(a) {
 }
 
 const lines = (t) => t.split(/\n|,/).map((s) => s.trim()).filter(Boolean);
+// ── 자동 공감 이모지 확률 편집(카드마다) ──
+const ONE_EMOJI = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F)(\u200D\p{Extended_Pictographic}\uFE0F?|[\u{1F3FB}-\u{1F3FF}])*$/u;   // 서버 cleanMix 와 같은 규칙
+const sameE = (a, b) => a.replace(/[\uFE0E\uFE0F\u200D]/g, '') === b.replace(/[\uFE0E\uFE0F\u200D]/g, '');
+const numOr = (inp) => (inp.value.trim() === '' ? undefined : +inp.value);   // 빈 칸은 보내지 않아 서버 기본값(예: 하루 20)
+const mixOf = (el) => [...el.querySelectorAll('.mixrow')].map((r) => ({ e: r.dataset.e, p: Math.min(100, Math.max(0, Math.round(+r.querySelector('input').value || 0))) }));
+function renderMix(el, mix) {
+  el.querySelector('.mix').innerHTML = mix.map((x) => `<div class="mixrow" data-e="${esc(x.e)}"><span class="e">${esc(x.e)}</span>
+    <input type="number" min="0" max="100" step="1" value="${Number(x.p) || 0}" aria-label="${esc(x.e)} 확률(%)"><span>%</span>
+    <span class="bar"><i></i></span><button type="button" class="x" aria-label="${esc(x.e)} 빼기"${mix.length < 2 ? ' disabled' : ''}>✕</button></div>`).join('');
+  mixBars(el);
+}
+function mixBars(el) {
+  const mix = mixOf(el), sum = mix.reduce((a, x) => a + x.p, 0), box = el.querySelector('.mixSum');
+  el.querySelectorAll('.mixrow .bar i').forEach((b, i) => { b.style.width = sum ? (mix[i].p / sum * 100) + '%' : '0'; });
+  box.textContent = sum === 100 ? '합계 100%' : sum > 0 ? `합계 ${sum}% — 100이 아니어도 적은 숫자의 비율대로 나눠서 골라요.` : '확률을 1 이상 넣어 주세요. 모두 0이면 첫 이모지만 써요.';
+  box.classList.toggle('bad', sum !== 100);
+  el.querySelectorAll('.emojis button').forEach((b) => b.setAttribute('aria-pressed', mix.some((x) => sameE(x.e, b.dataset.add))));
+}
+function addMix(el, e) {
+  const mix = mixOf(el);
+  let i = mix.findIndex((x) => sameE(x.e, e));
+  if (i < 0) { if (mix.length >= 8) return; mix.push({ e, p: Math.max(0, 100 - mix.reduce((a, x) => a + x.p, 0)) }); renderMix(el, mix); i = mix.length - 1; }
+  const inp = el.querySelectorAll('.mixrow input')[i]; if (inp) { inp.focus(); inp.select(); }
+}
 function bindCard(aid, el) {
   const msg = el.querySelector('.msg'), q = (s) => el.querySelector(s);
   const cfgOf = () => ({ targets: lines(q('.tg').value), replies: q('.rp').value.split('\n').map((s) => s.trim()).filter(Boolean),
-    cap: +q('.cap').value, cooldown: +q('.cd').value, delay: [+q('.d0').value, +q('.d1').value], hours: [+q('.h0').value, +q('.h1').value] });
-  el.querySelectorAll('textarea,input:not(.en)').forEach((i) => i.addEventListener('input', () => editing.add(aid)));
+    cap: numOr(q('.cap')), cooldown: numOr(q('.cd')), delay: [+q('.d0').value, +q('.d1').value], hours: [+q('.h0').value, +q('.h1').value],
+    replyOn: q('.rpOn').checked, react: { on: q('.rcOn').checked, mix: mixOf(el), cap: numOr(q('.rcap')) } });
+  el.querySelectorAll('textarea,input:not(.en):not(.emc)').forEach((i) => i.addEventListener('input', () => editing.add(aid)));   // 이모지 입력칸은 추가할 때만 편집으로 봄
+  const touched = () => editing.add(aid);
+  q('.rcOn').addEventListener('change', () => { q('.rcbox').hidden = !q('.rcOn').checked; touched(); });
+  q('.rpOn').addEventListener('change', touched);
+  q('.mix').addEventListener('input', () => { touched(); mixBars(el); });
+  q('.mix').addEventListener('change', (ev) => { if (ev.target.matches('input')) ev.target.value = Math.min(100, Math.max(0, Math.round(+ev.target.value || 0))); });
+  q('.mix').addEventListener('click', (ev) => {
+    const b = ev.target.closest('.x'); if (!b) return;
+    const rows = [...el.querySelectorAll('.mixrow')]; if (rows.length < 2) return;
+    touched(); renderMix(el, mixOf(el).filter((_, i) => rows[i] !== b.closest('.mixrow')));
+  });
+  q('.emojis').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-add]'); if (b) { touched(); addMix(el, b.dataset.add); } });
+  q('.emc').addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Enter' || ev.isComposing) return;
+    ev.preventDefault();
+    const v = q('.emc').value.trim(); if (!v) return;
+    if (!ONE_EMOJI.test(v)) { q('.emc').setCustomValidity('이모지 한 글자만 넣어 주세요'); q('.emc').reportValidity(); return; }
+    q('.emc').setCustomValidity(''); q('.emc').value = ''; touched(); addMix(el, v);
+  });
+  q('.emc').addEventListener('input', () => q('.emc').setCustomValidity(''));
   const saved = (r) => { editing.delete(aid); el.dataset.cfg = ''; };   // 다음 refresh 때 서버가 고친 값(범위 보정 등)으로 다시 채움
   q('.save').onclick = async () => {
     setMsg(msg, '저장 중…');
