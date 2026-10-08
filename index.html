@@ -291,11 +291,13 @@ $('authForm').onsubmit = async (ev) => {
   ev.preventDefault();
   const id = $('aId').value.trim().toLowerCase(), pw = $('aPw').value;
   $('authBtn').disabled = true; setMsg($('authMsg'), mode === 'login' ? '로그인 중…' : '가입 신청 중…');
-  const r = await call(mode, { id, pw, name: $('aName').value.trim() });
+  const r = await call(mode, Object.assign({ id, pw, name: $('aName').value.trim() }, mode === 'login' && linkTicket ? { ticket: linkTicket } : {}));
   $('authBtn').disabled = false;
   if (!r.ok) return setMsg($('authMsg'), errText(r.error), 'err');
   if (mode === 'signup') { setMode('login'); $('aPw').value = ''; return setMsg($('authMsg'), '가입 신청을 보냈어요. 관리자가 승인하면 로그인할 수 있어요.', 'ok'); }
-  setToken(r.token); $('aPw').value = ''; show();
+  const linkFail = linkTicket && r.linked === false;
+  linkTicket = ''; setToken(r.token); $('aPw').value = ''; await show();
+  if (linkFail) alert('로그인은 됐지만 공유 계정과 연결하지 못했어요(시간이 지났거나 이미 다른 계정과 연결됨). HEO Works 에서 DM 을 다시 열어 주세요.');
 };
 $('logoutBtn').onclick = async () => { await call('logout'); setToken(''); show(); };
 
@@ -761,7 +763,21 @@ $('pwForm').onsubmit = async (ev) => {
   setTimeout(() => { setToken(''); show(); }, 1500);
 };
 document.addEventListener('visibilitychange', () => { if (!document.hidden && token && me) refresh(); });
-show();
+// HEO Works 에서 열었으면 주소의 일회용 코드(#sso=…)로 로그인. 같은 아이디의 DM 회원이 이미 있으면 그 DM 비밀번호로 한 번 로그인해 연결
+let linkTicket = '';
+(async () => {
+  const sso = (location.hash.match(/[#&]sso=([A-Za-z0-9]{40})/) || [])[1];
+  if (!sso) return show();
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  const r = await call('ssoLogin', { code: sso });
+  if (r.ok) { setToken(r.token); return show(); }
+  setToken(''); await show();
+  if (r.error === 'need_link') {
+    linkTicket = r.ticket; setMode('login'); $('aId').value = r.id;
+    return setMsg($('authMsg'), '같은 아이디(' + r.id + ')의 DM 계정이 있어요. 그 DM 비밀번호로 한 번 로그인하면 공유 계정과 연결돼요.', 'ok');
+  }
+  setMsg($('authMsg'), r.error === 'sso_expired' ? '공유 계정 로그인 코드가 만료됐어요. 다시 열어 주세요.' : r.error === 'pending' ? '공유 계정으로 이용 신청을 보냈어요. 관리자가 승인하면 쓸 수 있어요.' : errText(r.error), r.error === 'pending' ? 'ok' : 'err');
+})();
 </script>
 </body>
 </html>
