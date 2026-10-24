@@ -48,15 +48,13 @@ textarea{resize:vertical;min-height:88px}
 input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--blue-focus);outline-offset:1px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
 button{font:inherit;cursor:pointer;border:0;border-radius:var(--r-pill);padding:11px 20px;min-height:44px;background:var(--blue);color:#fff;font-weight:600;transition:transform .1s}
+a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-weight:600;border-radius:var(--r-pill);padding:11px 22px;min-height:44px;background:var(--blue);color:#fff}
 button:active{transform:scale(.98)}
 button:disabled{opacity:.5;cursor:default}
 button.ghost{background:transparent;color:var(--blue);border:1px solid var(--blue)}
 button.plain{background:transparent;color:var(--muted);padding:11px 12px}
 button.danger{background:transparent;color:var(--red);border:1px solid var(--red)}
 button.small{padding:6px 14px;min-height:34px;font-size:14px}
-.tabs{display:flex;gap:8px;margin-bottom:16px}
-.tabs button{background:var(--parchment);color:var(--ink)}
-.tabs button.on{background:var(--ink);color:#fff}
 .badge{display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:var(--r-pill);background:#fff;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
 .badge.ok{color:var(--green);border-color:var(--green)}
 .badge.warn{color:var(--red);border-color:var(--red)}
@@ -128,26 +126,12 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
 </div></header>
 
 <main class="wrap">
-  <!-- 로그인·가입 -->
+  <!-- 로그인: HEO Works 공유 계정으로만 -->
   <section id="authView" class="auth hidden">
     <h2>로그인</h2>
-    <p class="lead">가입하면 관리자가 승인한 뒤 쓸 수 있어요.</p>
-    <div class="tabs" role="tablist">
-      <button id="tabLogin" class="on" role="tab" aria-selected="true">로그인</button>
-      <button id="tabSignup" role="tab" aria-selected="false">가입</button>
-    </div>
-    <form id="authForm" autocomplete="on">
-      <label for="aId">아이디 <span class="hint">영문 소문자·숫자·_ 3~20자</span></label>
-      <input id="aId" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required>
-      <div id="nameWrap" class="hidden">
-        <label for="aName">이름</label>
-        <input id="aName" maxlength="20" autocomplete="nickname">
-      </div>
-      <label for="aPw">비밀번호 <span class="hint" id="pwHint"></span></label>
-      <input id="aPw" type="password" name="password" autocomplete="current-password" required>
-      <div class="actions"><button type="submit" id="authBtn">로그인</button></div>
-      <div class="msg" id="authMsg" role="status"></div>
-    </form>
+    <p class="lead">HEO Works 계정으로 로그인해요. 처음 들어오면 바로 쓸 수 있어요. 예전에 이 사이트에 따로 가입했다면 같은 아이디로 들어오세요. 관리자가 확인한 뒤 설정이 그대로 이어져요.</p>
+    <div class="actions"><a class="btn" id="hubBtn" href="https://heoworks.pages.dev/#login=dm">HEO Works 로그인</a></div>
+    <div class="msg" id="authMsg" role="status"></div>
   </section>
 
   <!-- 내 계정 -->
@@ -177,10 +161,11 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
 
   <section id="pwView" class="hidden">
     <details>
-      <summary>비밀번호 바꾸기</summary>
+      <summary>확인용 비밀번호 바꾸기</summary>
+      <p class="sub">저장된 비밀번호를 보거나 보낼 때 다시 묻는 비밀번호예요(로그인은 HEO Works 계정으로 해요).</p>
       <form id="pwForm">
-        <label for="oldPw">지금 비밀번호</label><input id="oldPw" type="password" autocomplete="current-password" required>
-        <label for="newPw">새 비밀번호 <span class="hint">6자 이상</span></label><input id="newPw" type="password" autocomplete="new-password" minlength="6" required>
+        <label for="oldPw">지금 확인용 비밀번호</label><input id="oldPw" type="password" autocomplete="current-password" required>
+        <label for="newPw">새 확인용 비밀번호 <span class="hint">6자 이상</span></label><input id="newPw" type="password" autocomplete="new-password" minlength="6" required>
         <div class="actions"><button type="submit">바꾸기</button></div>
         <div class="msg" id="pwMsg" role="status"></div>
       </form>
@@ -228,7 +213,7 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
 <dialog id="pwAsk" class="ask" aria-labelledby="pwAskText">
   <form method="dialog">
     <p id="pwAskText"></p>
-    <input id="pwAskIn" type="password" autocomplete="current-password" aria-label="이 사이트의 비밀번호" required>
+    <input id="pwAskIn" type="password" autocomplete="current-password" aria-label="확인용 비밀번호" required>
     <div class="row"><button type="button" class="ghost small" data-cancel>취소</button><button type="submit" class="small">확인</button></div>
   </form>
 </dialog>
@@ -236,19 +221,21 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
 <script>
 // 서버 주소 바꾸기(로컬 시험용)는 이 사이트를 내 PC(localhost)에서 열었을 때만 받음 — 같은 출처의 다른 사이트가 값을 바꿔 두어도 비밀번호가 딴 데로 가지 않게
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+const PORTAL = (LOCAL && (() => { try { return localStorage.getItem('dm-reply:portal') || ''; } catch (e) { return ''; } })()) || 'https://heoworks.pages.dev/';
 const API = (LOCAL && (() => { try { return localStorage.getItem('dm-reply:api') || ''; } catch (e) { return ''; } })()) || 'https://dm-api.dawn-sea-4052.workers.dev';
 const TK = 'dm-reply:token';
 let token = (() => { try { return localStorage.getItem(TK) || ''; } catch (e) { return ''; } })();
-let me = null, mode = 'login', timer = null, seq = 0, editing = new Set();
+let me = null, timer = null, seq = 0, editing = new Set();
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const ERR = {
   network: '서버에 연결하지 못했어요. 인터넷을 확인해 주세요.', server: '서버 오류가 났어요. 잠시 뒤 다시 해 주세요.',
-  wrong: '아이디나 비밀번호가 맞지 않아요.', locked: '로그인 실패가 많아 잠시 잠겼어요. 15~30분 뒤에 다시 해 주세요.',
-  pending: '아직 관리자 승인 전이에요. 승인되면 로그인할 수 있어요.', blocked: '이용이 막힌 계정이에요.',
-  bad_id: '아이디는 영문 소문자·숫자·_ 3~20자로 해 주세요.', bad_pw: '비밀번호는 6자 이상으로 해 주세요.',
-  id_taken: '이미 있는 아이디예요.', signup_limit: '오늘 가입 가능한 수를 넘었어요. 내일 다시 해 주세요.',
+  wrong: '비밀번호가 맞지 않아요.', locked: '여러 번 틀려 잠시 잠겼어요. 15분 뒤에 다시 해 주세요.',
+  pending: '이용 신청을 보냈어요. 관리자가 승인하면 쓸 수 있어요.', blocked: '이용이 막힌 계정이에요.',
+  bad_pw: '비밀번호는 6자 이상으로 해 주세요.', use_hub: '이제 HEO Works 계정으로만 로그인해요.',
+  sso_expired: '로그인 코드가 만료됐어요. HEO Works 로그인을 다시 눌러 주세요.',
+  need_admin_link: '이 아이디의 예전 DM 계정이 있어 관리자가 연결해야 해요. 관리자에게 문의하세요.',
   bad_label: '이름표를 적어 주세요.', acc_limit: '계정은 한 사람당 2개까지예요.', acc_total: 'PC 가 감당할 수 있는 계정 수가 다 찼어요.',
   need_cfg: '켜려면 대상을 넣고, 답장 문구나 자동 공감 중 하나는 켜서 저장해 주세요.', not_found: '계정을 찾을 수 없어요.',
   forbidden: '권한이 없어요.', self: '자기 자신은 바꿀 수 없어요.', bad_status: '잘못된 상태 값이에요.',
@@ -256,7 +243,7 @@ const ERR = {
   remote_full: '지금 다른 사람이 원격 로그인을 쓰고 있어요(동시 3명까지). 잠시 뒤 다시 해 주세요.',
   pc_off: 'PC 다리가 꺼져 있어 입력을 보낼 수 없어요. PC 가 켜지고 다리가 돌아야 해요.',
   auth: '로그인이 끝났어요. 다시 로그인해 주세요.', unknown_action: '사이트가 옛 버전이에요. 새로고침해 주세요.', too_big: '보내는 내용이 너무 커요.', bad_json: '잘못된 요청이에요. 새로고침해 주세요.',
-  wrong_site_pw: '이 사이트의 비밀번호가 맞지 않아요.', locked_site_pw: '비밀번호를 여러 번 틀려 15분 동안 잠겼어요.',
+  wrong_site_pw: '확인용 비밀번호가 맞지 않아요.', locked_site_pw: '비밀번호를 여러 번 틀려 15분 동안 잠겼어요.',
   remote_inuse: '다른 사람이 지금 이 계정을 원격으로 쓰고 있어요. 끝난 뒤 다시 해 주세요.', owner_inactive: '이 계정 주인이 차단·승인 대기 상태라 원격을 열 수 없어요.',
   remote_limit: '이번 원격에서 보낼 수 있는 입력 수를 다 썼어요. 끝내고 다시 열어 주세요.',
   vault_empty: '이 계정에 저장된 비밀번호가 없어요.', vault_unreadable: '저장된 비밀번호를 읽을 수 없어요(서버 열쇠가 바뀜). 다시 로그인해 새로 저장하세요.',
@@ -269,37 +256,14 @@ async function call(action, body) {
     const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ action, token }, body || {})) });
     r = await res.json();
   } catch (e) { return { ok: false, error: 'network' }; }
-  if (!r.ok && r.error === 'auth' && action !== 'login') { setToken(''); show(); }
+  if (!r.ok && r.error === 'auth' && action !== 'ssoLogin') { setToken(''); show(); }
   return r;
 }
 function setToken(t) { token = t; if (!t) clearUi(); try { t ? localStorage.setItem(TK, t) : localStorage.removeItem(TK); } catch (e) {} }
 function setMsg(el, text, kind) { el.textContent = text || ''; el.className = 'msg' + (kind ? ' ' + kind : ''); }
 
-// ── 로그인·가입 ──
-function setMode(m) {
-  mode = m;
-  $('tabLogin').classList.toggle('on', m === 'login'); $('tabSignup').classList.toggle('on', m === 'signup');
-  $('tabLogin').setAttribute('aria-selected', m === 'login'); $('tabSignup').setAttribute('aria-selected', m === 'signup');
-  $('nameWrap').classList.toggle('hidden', m !== 'signup');
-  $('authBtn').textContent = m === 'login' ? '로그인' : '가입 신청';
-  $('pwHint').textContent = m === 'signup' ? '6자 이상' : '';
-  $('aPw').autocomplete = m === 'signup' ? 'new-password' : 'current-password';
-  setMsg($('authMsg'), '');
-}
-$('tabLogin').onclick = () => setMode('login');
-$('tabSignup').onclick = () => setMode('signup');
-$('authForm').onsubmit = async (ev) => {
-  ev.preventDefault();
-  const id = $('aId').value.trim().toLowerCase(), pw = $('aPw').value;
-  $('authBtn').disabled = true; setMsg($('authMsg'), mode === 'login' ? '로그인 중…' : '가입 신청 중…');
-  const r = await call(mode, Object.assign({ id, pw, name: $('aName').value.trim() }, mode === 'login' && linkTicket ? { ticket: linkTicket } : {}));
-  $('authBtn').disabled = false;
-  if (!r.ok) return setMsg($('authMsg'), errText(r.error), 'err');
-  if (mode === 'signup') { setMode('login'); $('aPw').value = ''; return setMsg($('authMsg'), '가입 신청을 보냈어요. 관리자가 승인하면 로그인할 수 있어요.', 'ok'); }
-  const linkFail = linkTicket && r.linked === false;
-  linkTicket = ''; setToken(r.token); $('aPw').value = ''; await show();
-  if (linkFail) alert('로그인은 됐지만 공유 계정과 연결하지 못했어요(시간이 지났거나 이미 다른 계정과 연결됨). HEO Works 에서 DM 을 다시 열어 주세요.');
-};
+// ── 로그인(HEO Works 포털에서 일회용 코드를 받아 #sso=… 로 돌아옴) ──
+$('hubBtn').href = PORTAL + '#login=dm';
 $('logoutBtn').onclick = async () => { await call('logout'); setToken(''); show(); };
 
 // ── 화면 전환 ──
@@ -320,8 +284,9 @@ async function show() {
   await refresh();                                   // 먼저 그린 뒤 보여 줌
   if (!token || !me) return;
   $('authView').classList.add('hidden');
-  ['appView', 'pwView', 'pcState', 'logoutBtn'].forEach((id) => $(id).classList.remove('hidden'));
+  ['appView', 'pcState', 'logoutBtn'].forEach((id) => $(id).classList.remove('hidden'));
   $('adminView').classList.toggle('hidden', me.role !== 'admin');
+  $('pwView').classList.toggle('hidden', me.role !== 'admin');   // 확인용 비밀번호는 저장된 비밀번호(관리자 자기 계정)에만 씀
   timer = setInterval(refresh, 10000);
 }
 
@@ -574,7 +539,7 @@ const fmtT = (ts) => { const d = new Date(ts); return `${d.getMonth() + 1}/${d.g
 let vaultPw = '';   // 저장된 비밀번호 보기는 사이트 비밀번호를 다시 확인(이 페이지에 있는 동안만 기억)
 async function loadVault(aid, vt) {
   const ul = vt.querySelector('.vlist');
-  if (!vaultPw) { vaultPw = await askPw('저장된 비밀번호를 보려면 이 사이트의 비밀번호를 입력하세요.'); if (!vaultPw) { vt.open = false; return; } }
+  if (!vaultPw) { vaultPw = await askPw('저장된 비밀번호를 보려면 확인용 비밀번호를 입력하세요.'); if (!vaultPw) { vt.open = false; return; } }
   const r = await call('vaultList', { aid, pw: vaultPw });
   if (!r.ok) { if (r.error === 'wrong') { vaultPw = ''; vt.open = false; } else ul.innerHTML = `<li class="err">${esc(pwErr(r.error))}</li>`; return r.error === 'wrong' && alert(pwErr(r.error)); }   // 틀리면 접어 둠: 다시 펴면 다시 물음
   if (!r.items.length) return ul.innerHTML = '<li class="empty">아직 저장된 비밀번호가 없어요.</li>';
@@ -711,7 +676,7 @@ $('rText').onkeydown = (ev) => {   // 글자+Enter 를 한 요청으로(따로 �
   if (t) typeEv(t, true); else sendEvent('key', { key: 'Enter' });
 };
 $('rVault').onclick = async () => {   // 서버가 사이트 비밀번호를 다시 확인하고, PC 는 비밀번호 칸에 커서가 있을 때만 넣음
-  if (!vaultPw) vaultPw = await askPw('저장된 최근 비밀번호를 PC 의 비밀번호 칸에 넣어요(그 칸을 먼저 클릭해 두세요). 이 사이트의 비밀번호를 입력하세요.');
+  if (!vaultPw) vaultPw = await askPw('저장된 최근 비밀번호를 PC 의 비밀번호 칸에 넣어요(그 칸을 먼저 클릭해 두세요). 확인용 비밀번호를 입력하세요.');
   if (!vaultPw) return;
   const r = await sendEvent('vault', { enter: false, pw: vaultPw });
   if (!r.ok && r.error === 'wrong') vaultPw = '';
@@ -764,8 +729,7 @@ $('pwForm').onsubmit = async (ev) => {
   setTimeout(() => { setToken(''); show(); }, 1500);
 };
 document.addEventListener('visibilitychange', () => { if (!document.hidden && token && me) refresh(); });
-// HEO Works 에서 열었으면 주소의 일회용 코드(#sso=…)로 로그인. 같은 아이디의 DM 회원이 이미 있으면 그 DM 비밀번호로 한 번 로그인해 연결
-let linkTicket = '';
+// HEO Works 에서 열었으면 주소의 일회용 코드(#sso=…)로 로그인. 같은 아이디의 옛 DM 회원이 있으면 관리자가 연결해야 함(need_admin_link)
 (async () => {
   const sso = (location.hash.match(/[#&]sso=([A-Za-z0-9]{40})/) || [])[1];
   if (!sso) return show();
@@ -773,11 +737,7 @@ let linkTicket = '';
   const r = await call('ssoLogin', { code: sso });
   if (r.ok) { setToken(r.token); return show(); }
   setToken(''); await show();
-  if (r.error === 'need_link') {
-    linkTicket = r.ticket; setMode('login'); $('aId').value = r.id;
-    return setMsg($('authMsg'), '같은 아이디(' + r.id + ')의 DM 계정이 있어요. 그 DM 비밀번호로 한 번 로그인하면 공유 계정과 연결돼요.', 'ok');
-  }
-  setMsg($('authMsg'), r.error === 'sso_expired' ? '공유 계정 로그인 코드가 만료됐어요. 다시 열어 주세요.' : r.error === 'pending' ? '공유 계정으로 이용 신청을 보냈어요. 관리자가 승인하면 쓸 수 있어요.' : errText(r.error), r.error === 'pending' ? 'ok' : 'err');
+  setMsg($('authMsg'), errText(r.error), r.error === 'pending' ? 'ok' : 'err');
 })();
 </script>
 </body>
