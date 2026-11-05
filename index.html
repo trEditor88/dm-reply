@@ -222,7 +222,7 @@ footer{color:var(--ink-48);font-size:13px;text-align:center;padding:32px 16px 48
 // 서버 주소 바꾸기(로컬 시험용)는 이 사이트를 내 PC(localhost)에서 열었을 때만 받음 — 같은 출처의 다른 사이트가 값을 바꿔 두어도 비밀번호가 딴 데로 가지 않게
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const PORTAL = (LOCAL && (() => { try { return localStorage.getItem('dm-reply:portal') || ''; } catch (e) { return ''; } })()) || 'https://heoworks.pages.dev/';
-const API = (LOCAL && (() => { try { return localStorage.getItem('dm-reply:api') || ''; } catch (e) { return ''; } })()) || 'https://dm-api.dawn-sea-4052.workers.dev';
+const API = (LOCAL && (() => { try { return localStorage.getItem('dm-reply:api') || ''; } catch (e) { return ''; } })()) || 'https://heoworks.pages.dev/dm';   // 서울 연결 통로(workers.dev 는 한국에서 LA 로 감, 2026-11-05)
 const TK = 'dm-reply:token';
 let token = (() => { try { return localStorage.getItem(TK) || ''; } catch (e) { return ''; } })();
 let me = null, timer = null, seq = 0, editing = new Set();
