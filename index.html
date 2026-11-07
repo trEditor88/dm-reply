@@ -389,8 +389,14 @@ function updateCard(a, el, pcOn) {
     renderMix(el, rc.mix && rc.mix.length ? rc.mix : [{ e: '❤️', p: 100 }]);
     const b = c.bot || {}, f = b.first || {};
     q('.btOn').checked = !!b.on; q('.botbox').hidden = !b.on;
-    q('.btModel').value = b.model || 'haiku'; q('.btTeam').value = b.team || ''; q('.btTone').value = b.tone || 'friend';
+    q('.btModel').value = b.model || 'mix'; q('.btTeam').value = b.team || ''; q('.btTone').value = b.tone || 'friend';
     q('.fsOn').checked = !!f.on; q('.fsCap').value = f.cap || 2; q('.fsTot').value = f.total || 5; q('.fsGap').value = f.gap || 30;
+    const st = b.status || {}, ni = st.night || {}, sc = st.school || {}, ev = b.events || {}, nu = b.nudge || {}, la = b.late || {};
+    q('.evOn').checked = !!ev.on; el.querySelectorAll('[data-ev]').forEach((x) => { x.checked = (ev.types || []).includes(x.dataset.ev); });
+    q('.pfCap').value = b.perFriend || 15; q('.limLines').value = (b.limitLines || []).join('\n');
+    q('.stNight').checked = ni.on !== false; q('.stN0').value = (ni.h || [23, 7])[0]; q('.stN1').value = (ni.h || [23, 7])[1]; q('.stNLines').value = (st.nightLines || []).join('\n');
+    q('.stSchool').checked = !!sc.on; q('.stS0').value = (sc.h || [8, 16])[0]; q('.stS1').value = (sc.h || [8, 16])[1]; q('.stSMax').value = sc.max == null ? 3 : sc.max; q('.stSLines').value = (st.schoolLines || []).join('\n');
+    q('.nuOn').checked = !!nu.on; q('.nuAfter').value = nu.after || 180; q('.laOn').checked = la.on !== false; q('.laMax').value = la.maxH || 12;
     renderFriends(el, c.targets, b.friends || []);
     el.dataset.cfg = j;
   }
@@ -434,7 +440,7 @@ function accCard(a) {
       <label class="chk"><input type="checkbox" class="btOn"> 야구봇 <span class="hint">답장 문구 대신 AI 가 친구에 맞춰 야구 이야기로 답해요</span></label>
       <div class="botbox" hidden>
         <div class="grid2">
-          <div><label>AI 모델</label><select class="btModel"><option value="haiku">빠르고 저렴하게</option><option value="sonnet">꼼꼼하게</option></select></div>
+          <div><label>AI 모델 <span class="hint">섞어 쓰기: 평소엔 이 PC 의 무료 모델, 안 되면 꼼꼼한 모델, 큰 경기 소식은 처음부터 꼼꼼한 모델, 하루 마무리는 빠른 모델</span></label><select class="btModel"><option value="mix">섞어 쓰기(추천)</option><option value="haiku">빠르고 저렴하게만</option><option value="sonnet">꼼꼼하게만</option></select></div>
           <div><label>봇이 응원하는 구단</label><select class="btTeam"></select></div>
           <div><label>기본 말투</label><select class="btTone"></select></div>
         </div>
@@ -446,6 +452,30 @@ function accCard(a) {
           <div><label>하루 전체 최대</label><input class="fsTot" type="number" min="1" max="20"></div>
           <div><label>메시지 사이 최소 간격(분)</label><input class="fsGap" type="number" min="10" max="720"></div>
         </div>
+        <label class="chk"><input type="checkbox" class="evOn"> 야구 소식 먼저 알리기 <span class="hint">PC 의 야구 앱이 큰 사건을 알려 주면, 관련 친구에게 먼저 보내기로 보내요(먼저 보내기를 켜야 해요)</span></label>
+        <div class="evTypes row" role="group" aria-label="알릴 야구 소식" style="gap:4px 14px">${[['pregame', '경기 전 예상'], ['swing', '역전·큰 변화'], ['record_near', '좋아하는 선수 기록 임박'], ['record', '기록 달성'], ['final', '경기 끝']].map(([k, n]) => `<label class="chk" style="margin:4px 0;font-weight:400"><input type="checkbox" data-ev="${k}"> ${n}</label>`).join('')}</div>
+        <div class="grid2">
+          <div><label>친구 한 명과 하루 최대 답 <span class="hint">차면 그날 한 번 마무리 답 뒤 조용히</span></label><input class="pfCap" type="number" min="1" max="50"></div>
+        </div>
+        <label>오늘 마무리 문구 <span class="hint">AI 가 못 쓸 때 대신 보냄, 한 줄에 하나</span></label>
+        <textarea class="limLines" rows="2" maxlength="800"></textarea>
+        <label class="chk"><input type="checkbox" class="stNight"> 밤엔 "잔다" 한 번만 <span class="hint">그 시간에 온 메시지엔 한 번만 짧게 답하고 조용히</span></label>
+        <div class="grid2">
+          <div><label>밤 시작(시)</label><input class="stN0" type="number" min="0" max="23"></div>
+          <div><label>밤 끝(시)</label><input class="stN1" type="number" min="0" max="24"></div>
+        </div>
+        <textarea class="stNLines" rows="2" maxlength="800" aria-label="밤 문구(한 줄에 하나)"></textarea>
+        <label class="chk"><input type="checkbox" class="stSchool"> 학교 시간엔 짧게만 <span class="hint">평일만, 친구가 말 걸면 짧게 몇 번 답하다 "이따 얘기하자"로 마무리(봇이 먼저 말 걸지 않음)</span></label>
+        <div class="grid2">
+          <div><label>학교 시작(시)</label><input class="stS0" type="number" min="0" max="23"></div>
+          <div><label>학교 끝(시)</label><input class="stS1" type="number" min="0" max="24"></div>
+          <div><label>학교 시간에 짧게 이어 갈 답 수 <span class="hint">다 쓰면 "이따 얘기하자"로 마무리</span></label><input class="stSMax" type="number" min="0" max="10"></div>
+        </div>
+        <textarea class="stSLines" rows="2" maxlength="800" aria-label="학교 문구(한 줄에 하나)"></textarea>
+        <label class="chk"><input type="checkbox" class="nuOn"> 읽고 답이 없으면 한 번만 "바빠?" <span class="hint">내가 마지막에 보낸 말을 읽고 아래 시간 동안 답이 없을 때</span></label>
+        <div class="grid2"><div><label>기다릴 시간(분)</label><input class="nuAfter" type="number" min="30" max="720"></div></div>
+        <label class="chk"><input type="checkbox" class="laOn"> PC 가 꺼졌다 켜지면 밀린 메시지에 늦은 답 <span class="hint">"아까 자서 못 봤어" 처럼</span></label>
+        <div class="grid2"><div><label>몇 시간 안 메시지까지</label><input class="laMax" type="number" min="1" max="24"></div></div>
         <p class="hint" style="margin:6px 0 0">점수·기록은 PC 의 야구 자료에 있는 것만 말해요. 자료가 없으면 "아직 자료가 없어"라고 답해요.</p>
       </div>
       <div class="actions"><button class="save">저장</button></div>
@@ -479,6 +509,7 @@ function accCard(a) {
 }
 
 const lines = (t) => t.split(/\n|,/).map((s) => s.trim()).filter(Boolean);
+const lines2 = (t) => t.split('\n').map((s) => s.trim()).filter(Boolean);   // 문구 목록(쉼표가 문장에 들어갈 수 있어 줄로만 나눔)
 // ── 자동 공감 이모지 확률 편집(카드마다) ──
 const ONE_EMOJI = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F)(\u200D\p{Extended_Pictographic}\uFE0F?|[\u{1F3FB}-\u{1F3FF}])*$/u;   // 서버 cleanMix 와 같은 규칙
 const sameE = (a, b) => a.replace(/[\uFE0E\uFE0F\u200D]/g, '') === b.replace(/[\uFE0E\uFE0F\u200D]/g, '');
@@ -509,7 +540,12 @@ function bindCard(aid, el) {
     cap: numOr(q('.cap')), cooldown: numOr(q('.cd')), delay: [+q('.d0').value, +q('.d1').value], hours: [+q('.h0').value, +q('.h1').value],
     replyOn: q('.rpOn').checked, react: { on: q('.rcOn').checked, mix: mixOf(el), cap: numOr(q('.rcap')) },
     bot: { on: q('.btOn').checked, model: q('.btModel').value, team: q('.btTeam').value, tone: q('.btTone').value, friends: friendsOf(el),
-      first: { on: q('.fsOn').checked, cap: numOr(q('.fsCap')), total: numOr(q('.fsTot')), gap: numOr(q('.fsGap')) } } });
+      first: { on: q('.fsOn').checked, cap: numOr(q('.fsCap')), total: numOr(q('.fsTot')), gap: numOr(q('.fsGap')) },
+      perFriend: numOr(q('.pfCap')), limitLines: lines2(q('.limLines').value),
+      status: { night: { on: q('.stNight').checked, h: [+q('.stN0').value, +q('.stN1').value] }, school: { on: q('.stSchool').checked, weekdays: true, h: [+q('.stS0').value, +q('.stS1').value], max: numOr(q('.stSMax')) },
+        nightLines: lines2(q('.stNLines').value), schoolLines: lines2(q('.stSLines').value) },
+      nudge: { on: q('.nuOn').checked, after: numOr(q('.nuAfter')) }, late: { on: q('.laOn').checked, maxH: numOr(q('.laMax')) },
+      events: { on: q('.evOn').checked, types: [...el.querySelectorAll('[data-ev]')].filter((x) => x.checked).map((x) => x.dataset.ev) } } });
   el.querySelectorAll('.cfg textarea,.cfg input:not(.en):not(.emc)').forEach((i) => i.addEventListener('input', () => editing.add(aid)));   // 이모지 입력칸은 추가할 때만 편집으로 봄
   const touched = () => editing.add(aid);
   q('.rcOn').addEventListener('change', () => { q('.rcbox').hidden = !q('.rcOn').checked; touched(); });
@@ -517,6 +553,7 @@ function bindCard(aid, el) {
   q('.btTeam').innerHTML = '<option value="">(정하지 않음)</option>' + TEAMS.map((t) => `<option>${esc(t)}</option>`).join('');
   q('.btTone').innerHTML = TONE_OPTS;
   ['.btOn', '.fsOn'].forEach((s) => q(s).addEventListener('change', () => { q('.botbox').hidden = !q('.btOn').checked; touched(); }));
+  q('.botbox').addEventListener('change', touched);   // 야구봇 칸의 체크·선택 바뀜도 편집 중으로
   ['.btModel', '.btTeam', '.btTone'].forEach((s) => q(s).addEventListener('change', touched));
   q('.friends').addEventListener('change', touched);
   q('.tg').addEventListener('input', () => renderFriends(el, lines(q('.tg').value), friendsOf(el)));   // 대상을 고치면 친구 줄도 따라감(쓰던 값은 이름으로 유지)
