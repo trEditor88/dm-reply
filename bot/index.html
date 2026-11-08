@@ -135,7 +135,7 @@ const API = (LOCAL && ls('dm-reply:api')) || 'https://heoworks.pages.dev/dm';
 const TK = 'dmbot:token';
 let token = ls(TK), me = null, tab = 'game', poll = null, adminData = null;
 const setToken = (t) => { token = t || ''; try { t ? localStorage.setItem(TK, t) : localStorage.removeItem(TK); } catch (e) {} };
-const LV = ['0 순한 말', '1 가벼운 비속어', '2 거친 말', '3 최대치'];
+const LV = ['0 순한 말', '1 가끔 가벼운 비속어', '2 욕이 기본', '3 쌍욕이 기본'];
 const EV_KO = { pregame: '경기 전 예상', swing: '승리확률 크게 바뀜', record_near: '기록 임박', record: '기록 달성', final: '경기 끝' };
 const ERR = { auth: '로그인이 끝났어요. 다시 로그인해 주세요.', not_allowed: '아직 이 사이트를 쓸 수 없는 계정이에요. 관리자에게 문의해 주세요.', sso_expired: '로그인 코드가 만료됐어요. 다시 로그인해 주세요.',
   linked: '이미 이 봇과 연결된 방이 있어요.', limit: '오늘은 더 할 수 없어요. 내일 다시 해 주세요.', not_linked: '아직 연결된 방이 없어요.', not_found: '봇 계정을 찾지 못했어요.', not_target: '그 방을 찾지 못했어요.',
@@ -218,7 +218,7 @@ function settingsForm(v, id) {
       <div><label>말투</label><select name="tone"><option value="">봇 기본 말투</option>${Object.entries(tones).map(([k, n]) => `<option value="${esc(k)}"${k === s.tone ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></div>
       <div><label>말 세기 ${lvMax < 3 ? `<span class="sub">(이 방은 ${lvMax}까지)</span>` : ''}</label><select name="lvl">${LV.slice(0, lvMax + 1).map((n, i) => `<option value="${i}"${i === Math.min(s.lvl, lvMax) ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
     </div>
-    <div class="warnline" data-lvwarn ${s.lvl >= 2 ? '' : 'hidden'}>말 세기 2 이상은 거친 말이 섞여요. 신고가 쌓이면 봇 계정이 제한될 수 있어요.</div>
+    <div class="warnline" data-lvwarn ${s.lvl >= 2 ? '' : 'hidden'}>말 세기 2 이상은 대부분의 답에 욕이 들어가요. 신고가 쌓이면 봇 계정이 제한될 수 있어요.</div>
     <label class="chk${cap.padrip ? '' : ' dim'}"><input type="checkbox" name="padrip"${s.padrip && cap.padrip ? ' checked' : ''}${cap.padrip ? '' : ' disabled'}> 패드립 <span class="sub">(말 세기 3 에서만${cap.padrip ? '' : ' · 이 방은 쓸 수 없음'})</span></label>
     <label class="chk"><input type="checkbox" name="human"${s.human ? ' checked' : ''}> 인간미 <span class="sub">(가끔 오타·초성 답·아주 가끔 삐지기)</span></label>
     <label class="chk"><input type="checkbox" name="first"${s.first ? ' checked' : ''}> 야구 소식 먼저 받기 <span class="sub">(경기 소식·말 걸기)</span></label>
