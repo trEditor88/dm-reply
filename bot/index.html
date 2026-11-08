@@ -342,7 +342,10 @@ async function loadAdmin() {
       ${a.pend.map((x) => `<div class="room" data-pendrow><div class="row"><div class="grow"><b>${esc(x.room)}</b> <span class="sub">← ${esc(x.name)} (${esc(x.id)}) · ${esc(fmtT(x.at))} · ${esc(x.was)}</span></div>
         <button class="small" type="button" data-pendok="${esc(a.aid)}|${esc(x.uid)}" data-room="${esc(x.room)}" data-at="${esc(x.at)}">연결</button><button class="danger small" type="button" data-pendno="${esc(a.aid)}|${esc(x.uid)}" data-room="${esc(x.room)}" data-at="${esc(x.at)}">거절</button></div>
         ${x.hist && x.hist.length ? `<ul class="logs">${x.hist.map((h) => `<li><time>${h.mine ? '봇' : '상대'}</time><span>${esc(h.t)}</span></li>`).join('')}</ul>` : `<div class="sub">${x.hist || Date.now() - x.at > 10 * 60e3 ? '최근 대화를 못 읽었어요. 친구에게 직접 확인해 주세요.' : '최근 대화를 가져오는 중이에요(PC 다리).'}</div>`}</div>`).join('')}</div>` : '';
-  $('adminAccs').innerHTML = r.accs.length ? r.accs.map((a) => `<div class="card"><div class="title">봇 ${esc(a.label)} ${a.enabled ? '' : '<span class="badge warn">꺼짐</span>'}</div>${pendHtml(a)}${r.allow ? `<div data-lim="${esc(a.aid)}"></div>` : ''}
+  const ago = (t) => { const m = Math.max(0, Math.round((Date.now() - t) / 60e3)); return m < 60 ? `${m}분 전` : m < 2880 ? `${Math.floor(m / 60)}시간 전` : `${Math.floor(m / 1440)}일 전`; };
+  const sc = r.src, srcHtml = `<div class="card"><div class="title">야구 자료</div><div class="sub" data-src>${!sc ? '아직 PC 다리가 자료 상태를 올리지 않았어요(야구봇이 켜져 있을 때 5분마다).'
+    : `대화 자료: <b>${sc.ctx ? esc(ago(sc.ctx)) : '없음'}</b>${sc.ctx && Date.now() - sc.ctx > 12 * 3600e3 ? ' <span class="badge warn">오래됨</span>' : sc.ctx && sc.ctx - Date.now() > 600e3 ? ' <span class="badge warn">시각 이상</span>' : ''} · 경기 사건: <b>${sc.feed ? esc(ago(sc.feed)) : '없음'}</b>${sc.live ? ' (경기 중)' : ''}${sc.live && (!sc.feed || Date.now() - sc.feed > 10 * 60e3) ? ' <span class="badge warn">늦음</span>' : ''} <span style="color:var(--ink-48)">· PC 확인 ${esc(fmtT(sc.at))}</span>`}</div></div>`;
+  $('adminAccs').innerHTML = srcHtml + (r.accs.length ? r.accs.map((a) => `<div class="card"><div class="title">봇 ${esc(a.label)} ${a.enabled ? '' : '<span class="badge warn">꺼짐</span>'}</div>${pendHtml(a)}${r.allow ? `<div data-lim="${esc(a.aid)}"></div>` : ''}
     ${a.rooms.length ? a.rooms.map((v) => `<div class="room"><div class="row"><div class="grow"><b>${esc(v.room)}</b> <span class="sub">${v.link ? '연결: ' + esc(v.link.name) + ' (' + esc(v.link.id) + ')' : '연결 안 됨'}</span></div>
         <span class="badge${v.s.lvl >= 2 ? ' warn' : ''}">말 세기 ${esc(v.eff.lvl)}</span>${v.chat ? ' <span class="badge info">대화로 바뀜</span>' : ''}</div>
       <div class="row" style="margin-top:8px;gap:6px">
@@ -355,7 +358,7 @@ async function loadAdmin() {
       <details style="margin-top:8px"><summary class="sub" style="cursor:pointer">이 방 설정 보기·바꾸기</summary>${settingsForm(v, a.aid + '|' + v.room)}${logList(v.log)}
         ${v.chat ? `<button class="ghost small" type="button" data-chatreset-room="${esc(a.aid)}|${esc(v.room)}">대화로 바꾼 값 되돌리기</button>` : ''}
         ${v.link ? `<button class="danger small" type="button" data-unlink-room="${esc(a.aid)}|${esc(v.room)}" style="margin-left:6px">연결 끊기</button>` : ''}</details></div>`).join('') : '<div class="sub">대상(방)이 없어요. DM 사이트에서 대상을 넣거나 친구가 코드로 연결하면 생겨요.</div>'}</div>`).join('')
-    : '<div class="card sub">관리할 수 있는 야구봇 계정이 없어요.</div>';
+    : '<div class="card sub">관리할 수 있는 야구봇 계정이 없어요.</div>');
   const root = $('adminAccs');
   wireForm(root, loadAdmin);
   const split = (s) => { const i = s.indexOf('|'); return [+s.slice(0, i), s.slice(i + 1)]; };
