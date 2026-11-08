@@ -325,7 +325,8 @@ async function loadLimits(box, aid) {
     ${u.hits.length ? `<ul class="logs">${u.hits.map((h) => `<li><time>${esc(hm(h.at))}</time><span>${esc(h.what)}</span></li>`).join('')}</ul>` : ''}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:8px">${LIM_F.map(([k, t, mn, mx, opt]) => `<label class="sub" style="margin:0">${esc(t)}<input data-limk="${k}" type="number" min="${mn}" max="${mx}" step="${k === 'usd' ? '0.01' : '1'}" value="${esc(val(k))}"${opt ? ' placeholder="비움"' : ''} style="min-height:36px;padding:4px 8px"></label>`).join('')}</div>
     <div class="sub" style="margin-top:6px">한도에 닿으면 그 친구에게 마무리 한 줄을 보내고 조용해져요. 닿은 한도는 하루 한 번 DM 사이트 계정 기록에 '오류'로 남아요.</div>
-    <div class="row" style="margin-top:8px"><button class="small" type="button" data-limsave>한도 저장</button></div></details>`;
+    <div class="row" style="margin-top:8px"><button class="small" type="button" data-limsave>한도 저장</button></div></details>
+    ${sleepHtml(L.sleep || {})}`;
   box.querySelector('[data-limsave]').onclick = async () => {
     const lim = {};
     box.querySelectorAll('[data-limk]').forEach((i) => { const k = i.dataset.limk, v = i.value.trim(); lim[k] = v === '' ? (k === 'subDay' || k === 'usd' ? null : L[k]) : Number(v); });
@@ -333,6 +334,36 @@ async function loadLimits(box, aid) {
     msg($('adminMsg'), r2.ok ? '야구봇 한도를 저장했어요.' : errText(r2.error), r2.ok ? 'ok' : 'err');
     if (r2.ok) loadLimits(box, aid);
   };
+  box.querySelector('[data-sleepsave]').onclick = async () => {
+    const tm = (v) => { const m = /^(\d{1,2}):(\d{2})$/.exec(v || ''); return m ? Math.min(23, +m[1]) * 60 + Math.min(59, +m[2]) : null; };
+    const sl = { on: box.querySelector('[data-sl-on]').checked, a: tm(box.querySelector('[data-sl-a]').value), z: tm(box.querySelector('[data-sl-z]').value), wake: box.querySelector('[data-sl-wake]').value };
+    if (sl.a == null || sl.z == null) { msg($('adminMsg'), '시작·끝 시각을 넣어 주세요.', 'err'); return; }
+    if (sl.on && sl.a === sl.z) { msg($('adminMsg'), '시작과 끝이 같으면 켤 수 없어요.', 'err'); return; }
+    const r2 = await call('bsLimitsSave', { aid, lim: { sleep: sl } });
+    msg($('adminMsg'), r2.ok ? (sl.on ? `자는 시간을 켰어요(${hhmm(sl.a)}~${hhmm(sl.z)}).` : '자는 시간을 껐어요.') : errText(r2.error), r2.ok ? 'ok' : 'err');
+    if (r2.ok) loadLimits(box, aid);
+  };
+}
+// ── 자는 시간(2026-11-09, 기본 꺼짐): 켜면 DM '활동 시간'·밤 시간대 대신 이것만. 한국 시각, 자정 넘김 허용 ──
+const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+function sleepNow(sl, ms) {   // 서버 bot.js sleepSpan 과 같은 계산 → 'off' | { asleep, until }
+  if (!sl || sl.on !== true || !Number.isInteger(sl.a) || !Number.isInteger(sl.z) || sl.a === sl.z) return 'off';
+  const d = new Date((ms || Date.now()) + 9 * 3600e3), m = d.getUTCHours() * 60 + d.getUTCMinutes();
+  const asleep = sl.a < sl.z ? sl.a <= m && m < sl.z : m >= sl.a || m < sl.z;
+  return { asleep, until: hhmm(asleep ? sl.z : sl.a) };
+}
+function sleepHtml(sl) {
+  const st = sleepNow(sl), a = Number.isInteger(sl.a) ? sl.a : 60, z = Number.isInteger(sl.z) ? sl.z : 420;
+  const badge = st === 'off' ? '<span class="badge">꺼짐</span>' : st.asleep ? `<span class="badge info">자는 중 ~${esc(st.until)}까지</span>` : `<span class="badge ok">깨어 있음 · ${esc(st.until)}에 잠</span>`;
+  return `<details class="room" style="margin-top:8px"><summary style="cursor:pointer"><b>자는 시간</b> <span data-sleep-state>${badge}</span></summary>
+    <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">
+      <label class="chk" style="margin:0"><input type="checkbox" data-sl-on${sl.on === true ? ' checked' : ''}> 켜기</label>
+      <label class="sub" style="margin:0">자는 시작 <input data-sl-a type="time" value="${hhmm(a)}" style="width:auto;min-height:36px;padding:4px 8px"></label>
+      <label class="sub" style="margin:0">일어남 <input data-sl-z type="time" value="${hhmm(z)}" style="width:auto;min-height:36px;padding:4px 8px"></label>
+      <label class="sub" style="margin:0">깬 뒤 <select data-sl-wake style="width:auto;min-height:36px;padding:4px 8px"><option value="once"${sl.wake !== 'skip' ? ' selected' : ''}>친구마다 마지막 말에 한 번 답</option><option value="skip"${sl.wake === 'skip' ? ' selected' : ''}>조용히 넘김</option></select></label>
+    </div>
+    <div class="sub" style="margin-top:6px">한국 시각, 요일 구분 없음(예: 01:00~07:00). 자는 시간이 되면 막 대화하던 친구에게 자러 간다는 한 줄을 한 번 보내고, 자는 동안엔 답·먼저 보내기·야구 소식을 보내지 않아요. 자는 동안 생긴 야구 소식은 깬 뒤 버려요. 켜 두면 DM 사이트의 '활동 시간'과 밤 시간대는 이 봇에 걸리지 않아요. 꺼 두면 예전과 똑같이 움직여요.</div>
+    <div class="row" style="margin-top:8px"><button class="small" type="button" data-sleepsave>자는 시간 저장</button></div></details>`;
 }
 async function loadAdmin() {
   const r = await call('bsAdmin');
