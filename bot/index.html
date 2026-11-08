@@ -312,7 +312,28 @@ async function getCode(aid) {
   }, 1000);
 }
 
-// ── 관리 ──
+// ── 관리: 야구봇 전용 한도·오늘 쓴 양(관리자만, DM 자동 답장의 '하루 최대 답장'과 따로) ──
+const LIM_F = [['day', '하루 전체 답 수', 1, 100], ['perFriend', '친구별 하루 답 수', 1, 50], ['first', '먼저 보내기 하루 수', 1, 20], ['hour', '시간당 답 수 (0 = 제한 없음)', 0, 60],
+  ['aiDay', '하루 AI 답 수(서버가 셈)', 1, 500], ['aiFriend', '친구별 하루 AI 답 수', 1, 200], ['subDay', 'PC 구독 하루 호출 수 (빈칸 = 제한 없음)', 0, 2000, true], ['usd', '서버 API 하루 지출 달러 (빈칸 = 기본 몫)', 0, 100, true]];
+async function loadLimits(box, aid) {
+  const r = await call('bsLimits', { aid });
+  if (!r.ok) { box.innerHTML = `<div class="sub">한도를 못 읽었어요: ${esc(errText(r.error))}</div>`; return; }
+  const L = r.lim, u = r.use, val = (k) => L[k] == null ? '' : L[k];
+  const usd = (n) => '$' + (Number(n) || 0).toFixed(2);
+  box.innerHTML = `<details class="room" style="margin-top:8px"${u.hits.length ? ' open' : ''}><summary style="cursor:pointer"><b>야구봇 한도·오늘 쓴 양</b> <span class="sub">답 ${u.sent}/${L.day} · AI ${u.ai}/${L.aiDay} · 구독 ${u.sub}${L.subDay == null ? '' : '/' + L.subDay} · 지출 ${usd(u.usd)}/${usd(L.usd == null ? u.defUsd : L.usd)}</span>${u.hits.length ? ' <span class="badge warn">오늘 닿음 ' + u.hits.length + '</span>' : ''}</summary>
+    <div class="sub" style="margin:8px 0">오늘(${esc(u.day)}) 답 ${u.sent} · 먼저 보내기 ${u.first} · 이번 시간 답 ${u.hour} · 서버 AI 답 ${u.ai} · PC 구독 호출 ${u.sub} · 서버 API 지출 ${usd(u.usd)} (모든 봇 합계 ${usd(u.allUsd)} / 전체 상한 ${usd(u.capUsd)})${r.saved ? '' : ' · 아직 저장한 적 없음(지금 값 그대로)'}</div>
+    ${u.hits.length ? `<ul class="logs">${u.hits.map((h) => `<li><time>${esc(hm(h.at))}</time><span>${esc(h.what)}</span></li>`).join('')}</ul>` : ''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:8px">${LIM_F.map(([k, t, mn, mx, opt]) => `<label class="sub" style="margin:0">${esc(t)}<input data-limk="${k}" type="number" min="${mn}" max="${mx}" step="${k === 'usd' ? '0.01' : '1'}" value="${esc(val(k))}"${opt ? ' placeholder="비움"' : ''} style="min-height:36px;padding:4px 8px"></label>`).join('')}</div>
+    <div class="sub" style="margin-top:6px">한도에 닿으면 그 친구에게 마무리 한 줄을 보내고 조용해져요. 닿은 한도는 하루 한 번 DM 사이트 계정 기록에 '오류'로 남아요.</div>
+    <div class="row" style="margin-top:8px"><button class="small" type="button" data-limsave>한도 저장</button></div></details>`;
+  box.querySelector('[data-limsave]').onclick = async () => {
+    const lim = {};
+    box.querySelectorAll('[data-limk]').forEach((i) => { const k = i.dataset.limk, v = i.value.trim(); lim[k] = v === '' ? (k === 'subDay' || k === 'usd' ? null : L[k]) : Number(v); });
+    const r2 = await call('bsLimitsSave', { aid, lim });
+    msg($('adminMsg'), r2.ok ? '야구봇 한도를 저장했어요.' : errText(r2.error), r2.ok ? 'ok' : 'err');
+    if (r2.ok) loadLimits(box, aid);
+  };
+}
 async function loadAdmin() {
   const r = await call('bsAdmin');
   if (!r.ok) { $('adminAccs').innerHTML = `<div class="card sub">${esc(errText(r.error))}</div>`; return; }
@@ -321,7 +342,7 @@ async function loadAdmin() {
       ${a.pend.map((x) => `<div class="room" data-pendrow><div class="row"><div class="grow"><b>${esc(x.room)}</b> <span class="sub">← ${esc(x.name)} (${esc(x.id)}) · ${esc(fmtT(x.at))} · ${esc(x.was)}</span></div>
         <button class="small" type="button" data-pendok="${esc(a.aid)}|${esc(x.uid)}" data-room="${esc(x.room)}" data-at="${esc(x.at)}">연결</button><button class="danger small" type="button" data-pendno="${esc(a.aid)}|${esc(x.uid)}" data-room="${esc(x.room)}" data-at="${esc(x.at)}">거절</button></div>
         ${x.hist && x.hist.length ? `<ul class="logs">${x.hist.map((h) => `<li><time>${h.mine ? '봇' : '상대'}</time><span>${esc(h.t)}</span></li>`).join('')}</ul>` : `<div class="sub">${x.hist || Date.now() - x.at > 10 * 60e3 ? '최근 대화를 못 읽었어요. 친구에게 직접 확인해 주세요.' : '최근 대화를 가져오는 중이에요(PC 다리).'}</div>`}</div>`).join('')}</div>` : '';
-  $('adminAccs').innerHTML = r.accs.length ? r.accs.map((a) => `<div class="card"><div class="title">봇 ${esc(a.label)} ${a.enabled ? '' : '<span class="badge warn">꺼짐</span>'}</div>${pendHtml(a)}
+  $('adminAccs').innerHTML = r.accs.length ? r.accs.map((a) => `<div class="card"><div class="title">봇 ${esc(a.label)} ${a.enabled ? '' : '<span class="badge warn">꺼짐</span>'}</div>${pendHtml(a)}${r.allow ? `<div data-lim="${esc(a.aid)}"></div>` : ''}
     ${a.rooms.length ? a.rooms.map((v) => `<div class="room"><div class="row"><div class="grow"><b>${esc(v.room)}</b> <span class="sub">${v.link ? '연결: ' + esc(v.link.name) + ' (' + esc(v.link.id) + ')' : '연결 안 됨'}</span></div>
         <span class="badge${v.s.lvl >= 2 ? ' warn' : ''}">말 세기 ${esc(v.eff.lvl)}</span>${v.chat ? ' <span class="badge info">대화로 바뀜</span>' : ''}</div>
       <div class="row" style="margin-top:8px;gap:6px">
@@ -355,6 +376,7 @@ async function loadAdmin() {
     const r2 = await call('bsUnlink', { aid, room }); msg($('adminMsg'), r2.ok ? '연결을 끊었어요.' : errText(r2.error), r2.ok ? 'ok' : 'err'); if (r2.ok) loadAdmin(); }; });
   root.querySelectorAll('[data-chatreset-room]').forEach((b) => { b.onclick = async () => { const [aid, room] = split(b.dataset.chatresetRoom);
     const r2 = await call('bsChatReset', { aid, room }); msg($('adminMsg'), r2.ok ? '되돌렸어요.' : errText(r2.error), r2.ok ? 'ok' : 'err'); if (r2.ok) loadAdmin(); }; });
+  root.querySelectorAll('[data-lim]').forEach((box) => loadLimits(box, +box.dataset.lim));
   $('allowBox').classList.toggle('hidden', !r.allow);
   if (r.allow) {
     $('reqList').innerHTML = r.req.length ? r.req.map((x) => `<div class="row room"><div class="grow"><b>${esc(x.name)}</b> <span class="sub">${esc(x.id)} · ${esc(fmtT(x.at))}</span></div><button class="small" type="button" data-allow="${esc(x.uid)}">허용</button><button class="plain small" type="button" data-drop="${esc(x.uid)}">지우기</button></div>`).join('') : '<div class="sub">요청이 없어요.</div>';

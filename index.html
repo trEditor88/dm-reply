@@ -360,7 +360,7 @@ function renderAccounts(list, pcOn) {
 function stateLine(a, pcOn) {
   const needLogin = pcOn && (a.state === 'login' || a.state === 'new' && a.loginReq);
   const rc = (a.cfg && a.cfg.react) || {};
-  return `${stateBadge(a, pcOn)} <span class="sub">오늘 답장 ${Number(a.sent) || 0}/${Number(a.cfg.cap) || 0}` +
+  return `${stateBadge(a, pcOn)} <span class="sub">오늘 답장 ${Number(a.sent) || 0}/${Number(a.ybDay || a.cfg.cap) || 0}` +
     (rc.on ? ` · 공감 ${Number(a.reacted) || 0}/${Number(rc.cap) || 0}` : '') + `</span>` +
     (a.info && pcOn ? `<div class="sub" style="margin-top:6px">${esc(a.info)}</div>` : '') +
     (needLogin ? `<div class="note warn">이 계정은 인스타그램 로그인이 필요해요. 아래 <b>원격 로그인</b>을 누르면 여기서 바로 인스타그램에 로그인할 수 있어요. (비밀번호는 그 화면의 인스타 입력칸에만 넣고, 이 사이트 계정 비밀번호와 다르게 쓰세요)</div>` : '');
@@ -438,7 +438,7 @@ function accCard(a) {
         <p class="hint" style="margin:6px 0 0">답장도 켜져 있으면 공감을 누른 뒤 이어서 답장해요. 대상·대기 시간·활동 시간은 답장과 같이 써요.</p>
       </div>
       <div class="grid2">
-        <div><label>하루 최대 답장</label><input class="cap" type="number" min="1" max="50"></div>
+        <div><label>하루 최대 답장 <span class="hint" style="font-weight:400">야구봇은 야구봇 한도를 씀</span></label><input class="cap" type="number" min="1" max="50"></div>
         <div><label>같은 사람 다시 답장까지(초) <span class="hint" style="font-weight:400">야구봇은 안 씀</span></label><input class="cd" type="number" min="1" max="3600"></div>
         <div><label>보내기 전 대기(초, 최소)</label><input class="d0" type="number" min="3" max="120"></div>
         <div><label>보내기 전 대기(초, 최대)</label><input class="d1" type="number" min="3" max="120"></div>
@@ -466,13 +466,13 @@ function accCard(a) {
         <label class="chk"><input type="checkbox" class="fsOn"> 먼저 보내기 <span class="hint">아래 '먼저 보내기' 목록에 넣은 메시지를 시간이 되면 보내요</span></label>
         <div class="grid2">
           <div><label>친구 한 명에게 하루 최대</label><input class="fsCap" type="number" min="1" max="5"></div>
-          <div><label>하루 전체 최대</label><input class="fsTot" type="number" min="1" max="20"></div>
+          <div><label>하루 전체 최대 <span class="hint">야구봇 관리 탭 한도가 정함</span></label><input class="fsTot" type="number" min="1" max="20"></div>
           <div><label>메시지 사이 최소 간격(분)</label><input class="fsGap" type="number" min="10" max="720"></div>
         </div>
         <label class="chk"><input type="checkbox" class="evOn"> 야구 소식 먼저 알리기 <span class="hint">PC 의 야구 앱이 큰 사건을 알려 주면, 관련 친구에게 먼저 보내기로 보내요(먼저 보내기를 켜야 해요)</span></label>
         <div class="evTypes row" role="group" aria-label="알릴 야구 소식" style="gap:4px 14px">${[['pregame', '경기 전 예상'], ['swing', '역전·큰 변화'], ['record_near', '좋아하는 선수 기록 임박'], ['record', '기록 달성'], ['final', '경기 끝']].map(([k, n]) => `<label class="chk" style="margin:4px 0;font-weight:400"><input type="checkbox" data-ev="${k}"> ${n}</label>`).join('')}</div>
         <div class="grid2">
-          <div><label>친구 한 명과 하루 최대 답 <span class="hint">차면 그날 한 번 마무리 답 뒤 조용히</span></label><input class="pfCap" type="number" min="1" max="50"></div>
+          <div><label>친구 한 명과 하루 최대 답 <span class="hint">차면 그날 한 번 마무리 답 뒤 조용히 · 야구봇 관리 탭 한도가 정함</span></label><input class="pfCap" type="number" min="1" max="50"></div>
         </div>
         <label>오늘 마무리 문구 <span class="hint">AI 가 못 쓸 때 대신 보냄, 한 줄에 하나</span></label>
         <textarea class="limLines" rows="2" maxlength="800"></textarea>
